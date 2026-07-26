@@ -181,9 +181,17 @@ problem, no dual-write risk:
   `'watches'`, `'convert'`, `'group_admin'`, `'stats'`, `'persona'`,
   `'digest'`, `'voice_transcription'`, `'web_search'`, `'weather'`,
   `'crypto_prices'`, `'air_quality'`, `'qr_code'`, `'dictionary'`,
-  `'hackernews'`, `'site_scraping'`, `'menu'`), `enabled` (bool, default
-  true — nothing regresses on upgrade), `updated_at`, `updated_by`
-  (→ `identities.id`, for the audit trail).
+  `'hackernews'`, `'site_scraping'`, `'menu'`), `enabled`, `updated_at`,
+  `updated_by` (→ `identities.id`, for the audit trail). **No seed
+  rows** — a missing row means enabled (same missing-row-means-default
+  convention as `dynamic_config` below), checked in application code
+  (`store/feature_flags.zig`'s `isEnabled`), not via migration-time
+  `INSERT`s. This was a deliberate revision from the original plan: a
+  one-time seed `INSERT` would get permanently wiped the first time a
+  test's `TRUNCATE ... CASCADE` (via `updated_by`'s FK to `identities`)
+  ran, since an already-applied migration never re-runs its `INSERT` —
+  caught while implementing Phase 0, see the commit that added this
+  table.
 - **`dynamic_config`** — the DB-backed subset of today's env-only
   `Config` fields that are safe to expose as live-editable (see §5's
   table for exactly which ones) — `key` (PK), `value` (text, parsed per
