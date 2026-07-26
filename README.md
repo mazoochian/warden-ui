@@ -1,8 +1,22 @@
 # warden-ui
 
 A web control panel for [warden](../warden) — the Telegram/Matrix/XMPP bot.
-This directory is planning-only right now: no application code has been
-written yet. Start here, then read in this order:
+
+## Running it
+
+```
+npm install
+npm run dev     # http://localhost:3000
+npm run build   # production build + typecheck
+npm run lint
+```
+
+No real backend integration yet (see `ROADMAP.md`'s Phase 1/2) — every
+route under the dashboard shell renders a `PlaceholderPage` describing
+what's planned there and which phase builds it. The shell itself (nav,
+light/dark theme, routing) is real.
+
+## Where to start reading
 
 1. **`ARCHITECTURE.md`** — the system design: how warden-ui talks to warden,
    the auth/RBAC model, the data model additions, the module-toggle
@@ -34,4 +48,7 @@ for no real benefit, since they only ever talk to each other over HTTP.
 
 ## Status
 
-Planning only, 2026-07-27. See `ROADMAP.md` for where to pick up.
+Phase 0 (warden's own API foundations) and the start of Phase 1 (this
+app's shell: Next.js + Fluent UI, light/dark theme, routing, a
+placeholder login screen) are done as of 2026-07-27. Real login wiring,
+and everything past the shell, is still ahead — see `ROADMAP.md`.
