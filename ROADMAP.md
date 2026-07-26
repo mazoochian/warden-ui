@@ -13,12 +13,22 @@ bot" surface. It is **not** a one-shot. Treat this file as the backlog;
 update phase statuses as they land, same convention warden's own roadmap
 uses.
 
-Status as of writing: **nothing shipped, Phase 0 not started.**
+Status as of 2026-07-27 (overnight session): **Phase 0 done** (on the
+warden repo's `feature/api-server` branch, not merged to master yet —
+see PR #1 there); **Phase 1's shell is done**, its real login wiring
+isn't started yet. See each phase's own status line below, and
+`ARCHITECTURE.md` §11 for the open questions this session left for
+Armin to weigh in on.
 
 ---
 
 ## Phase 0 — API foundations in warden itself
-*Effort: L. Dependencies: none. Status: not started.*
+*Effort: L. Dependencies: none. Status: done (2026-07-27, on
+`feature/api-server`, not yet merged to master — draft PR #1 exists
+purely so CI has something to run against). Every item below shipped,
+including the dev-login stub and a real socket-level integration test
+that wasn't originally scoped but turned out necessary to actually prove
+the HTTP server code works without needing live Telegram credentials.*
 
 Everything downstream needs this, so it goes first even though nothing
 user-visible ships yet.
@@ -60,12 +70,18 @@ user-visible ships yet.
   this phase done.
 
 ## Phase 1 — Real login + frontend shell
-*Effort: L. Dependencies: Phase 0.*
+*Effort: L. Dependencies: Phase 0. Status: shell done (2026-07-27, on
+master), real login wiring not started. The three login methods below,
+account linking, and the session-list UI are all still ahead.*
 
-- warden-ui repo gets its actual scaffolding: Next.js (App Router) +
-  TypeScript + `@fluentui/react-components`, `FluentProvider` wired for
-  light/dark (a theme toggle, persisted per-browser), TanStack Query for
-  data-fetching against Phase 0's API.
+- ~~warden-ui repo gets its actual scaffolding~~ Done: Next.js (App
+  Router) + TypeScript + `@fluentui/react-components`, `FluentProvider`
+  wired for light/dark (a theme toggle, persisted per-browser, with a
+  blocking inline script avoiding a flash of the wrong theme), TanStack
+  Query installed and ready for Phase 2. Every dashboard route exists as
+  a real page today (most render a `PlaceholderPage` naming which phase
+  builds them); the nav nesting (Modules/Admin categories) matches this
+  roadmap's own module list.
 - Telegram Login Widget (HMAC verification server-side, per
   `ARCHITECTURE.md` §3.1) — the recommended *first* login method to wire
   up, since it needs no external provider registration/config and
