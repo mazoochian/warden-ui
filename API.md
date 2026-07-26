@@ -1,0 +1,126 @@
+# warden-ui ↔ warden API contract (sketch)
+
+This is a planning-stage sketch of the surface, not a frozen spec — it
+exists so `ROADMAP.md`'s phases have a concrete shape to build against and
+so warden-ui's data layer and warden's API layer are designed against the
+same picture from day one. Expect this to gain a real OpenAPI/JSON-Schema
+doc once Phase 0 implementation starts; this file stays as the
+human-readable map.
+
+All endpoints live under `/api/v1/`, served by warden itself (see
+`ARCHITECTURE.md` §1). Everything except `/api/v1/auth/*` and the login
+pages requires a valid session cookie; requests without one get `401`.
+
+## Conventions
+
+- JSON in, JSON out, `application/json` (multipart only for file upload —
+  Convert).
+- Errors: `{"error": {"code": "not_found", "message": "..."}}` with a
+  matching HTTP status — `400`/`401`/`403`/`404`/`409`/`429`/`500`.
+- Pagination on list endpoints: `?cursor=&limit=` (default 50, max 200),
+  response shape `{"items": [...], "next_cursor": "..." | null}`.
+- Every mutating endpoint (`POST`/`PATCH`/`DELETE`) writes one
+  `audit_log` row server-side — not something the caller opts into.
+- IDs in URLs are warden's own internal bigint ids (`chats.id`,
+  `identities.id`, etc.) — never a platform-native id, to keep the API
+  platform-agnostic the same way the store layer already is.
+
+## Auth
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/auth/providers` | Public. Lists enabled login methods (Telegram widget config, Google if configured, any enabled rows from `oauth_providers`) so the login page can render itself without hardcoding what's available. |
+| `POST /api/v1/auth/telegram/callback` | Body: the Telegram Login Widget's returned fields. Verifies `hash` (HMAC-SHA256 against the bot token), resolves/creates the matching `identities` row + `accounts` row, issues a session cookie. |
+| `GET /api/v1/auth/google/start` | Redirects to Google's `/authorize`. |
+| `GET /api/v1/auth/google/callback` | Handles the redirect back, exchanges `code` server-side, calls `/userinfo`, resolves/creates identity+account, issues session cookie. |
+| `GET /api/v1/auth/oidc/:providerId/start` / `.../callback` | Same shape as Google, generic over any enabled `oauth_providers` row. |
+| `POST /api/v1/auth/link/:method/start` | Requires an existing session. Same redirect dance as above, but on success adds an `account_identities` row to the *current* account instead of creating a new one. |
+| `POST /api/v1/auth/logout` | Revokes the current `web_sessions` row, clears the cookie. |
+| `GET /api/v1/auth/session` | Current account: `{account_id, display_name, avatar_url, identities: [...], roles: {owner, bot_admin, admin_of_chats: [chat_id, ...]}}`. The frontend's one call on every page load to know what to render. |
+
+## Account
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/me/identities` | Every identity linked to the caller's account. |
+| `DELETE /api/v1/me/identities/:identityId` | Unlink — refuses (`409`) if it's the account's last remaining identity. |
+| `GET /api/v1/me/sessions` | Every live `web_sessions` row for the account (device/IP/last-active) — "log out everywhere" material. |
+| `DELETE /api/v1/me/sessions/:sessionId` | Revoke a specific session (including, deliberately, the ability to revoke the one making the request — that's just "log out"). |
+| `GET /api/v1/me/settings` | The personal reminder timezone/date-format/time-format settings from `store/user_settings.zig` — same data `/menu`'s Settings → Personal already exposes, now over HTTP. |
+| `PATCH /api/v1/me/settings` | Update them. |
+| `GET /api/v1/me/credits` | Current LLM credit balance (`identities.credits`). |
+
+## Admin — modules & config (owner/bot admin only)
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/admin/modules` | Every row in `feature_flags` with its current `enabled` state. |
+| `PATCH /api/v1/admin/modules/:module` | `{"enabled": false}` — flips one module. |
+| `GET /api/v1/admin/config` | Every `dynamic_config` key, each with its current value and whether it's DB-overridden or falling back to the env default — plus the *masked* secret fields from §6 of `ARCHITECTURE.md` (shown, never returned in full, never accepted on write). |
+| `PATCH /api/v1/admin/config/:key` | `{"value": "..."}` — rejected (`403`) for any key classified as a secret. |
+| `GET /api/v1/admin/audit-log` | Paginated audit trail, filterable by `?action=`/`?account_id=`/`?since=`. |
+
+## Admin — stats & directory
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/admin/stats/overview` | `{total_messages, total_chats, total_identities, messages_last_24h, messages_last_7d, active_chats_last_7d}` — reuses `store/stats.zig`'s existing queries where they already exist. |
+| `GET /api/v1/admin/chats` | Paginated chat directory: `{id, platform, title, member_count, message_count, digest_enabled}`. |
+| `GET /api/v1/admin/chats/:id` | One chat's detail: settings, members, recent activity. |
+| `GET /api/v1/admin/identities` | Paginated user directory: `{id, platform, display_name, username, is_bot_admin, is_allowed, credits, last_seen}`. |
+| `GET /api/v1/admin/identities/:id` | One identity's detail. |
+| `POST /api/v1/admin/bot-admins` / `DELETE .../:identityId` | Grant/revoke bot admin — same authorization + effect as `/addadmin`/`/removeadmin`. |
+| `POST /api/v1/admin/allowlist/users` / `DELETE .../:identityId` | Same as `/adduser`/`/removeuser`. |
+| `POST /api/v1/admin/allowlist/chats` / `DELETE .../:chatId` | Same as `/allowchat`/`/disallowchat`. |
+
+## Groups (chat-scoped — group admin of that chat, bot admin, or owner)
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/chats?mine=true` | Chats the caller can manage (live platform admin of, or bot-admin/owner sees all). |
+| `GET /api/v1/chats/:id/settings` | Persona text, magic word, digest enabled, thinking override — `chat_settings` as-is. |
+| `PATCH /api/v1/chats/:id/settings` | Update any subset — same effect as `/persona`, `/magicword`, `/thinking`, `/digest`. |
+| `GET /api/v1/chats/:id/members` | `chat_members` joined with `identities` for that chat. |
+
+## Feature parity — Reminders / Alerts / Watches
+
+Scoped to the caller's own identity by default (`?chat_id=` narrows to
+one chat; a bot admin/owner can pass `?identity_id=` to view/manage on
+behalf of someone else, mirroring how e.g. `/redact` already lets a bot
+admin act beyond their own messages).
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/reminders?chat_id=` | Pending reminders — same shape as `/reminders`, each already rendered in *that reminder's setter's* timezone/format (see this session's work). |
+| `POST /api/v1/reminders` | `{chat_id, when: {kind: "duration"\|"absolute", ...}, message, recur_interval_seconds?}` — the "when" shape intentionally mirrors the wizard's own step data (date/hour/minute/second, or a duration), so the frontend's create-reminder form *is* effectively the wizard, just rendered as a real date/time picker instead of stepper buttons. |
+| `DELETE /api/v1/reminders/:id` | Same authorization as `/remind cancel` — setter or owner. |
+| `GET/POST/DELETE /api/v1/alerts...` | Same shape, mirroring `/alert`. |
+| `GET/POST/DELETE /api/v1/watches...` | Same shape, mirroring `/watch`. |
+
+## Feature parity — Convert
+
+| Method & path | Purpose |
+|---|---|
+| `POST /api/v1/convert` | Multipart: the file + target format. Synchronous response once conversion completes (matches today's one-shot `/convert <format>` caption command) — the interactive multi-step flow (`/convert` alone) doesn't need a UI equivalent, since a file-picker + format-dropdown form *is* the non-interactive shape already. |
+
+## Feature parity — Group Administration
+
+| Method & path | Purpose |
+|---|---|
+| `POST /api/v1/chats/:id/actions/{kick,ban,mute,unmute,pin,unpin,promote,demote}` | Body identifies the target identity. Same `checkGroupAdminAccess` ladder as the slash commands — a live platform admin of that specific chat, a bot admin, or the owner; **no extra confirmation step**, matching the existing "kick/ban via a button fire immediately" convention from `/menu`. |
+| `POST /api/v1/chats/:id/actions/redact` | `{mode: "lastn"\|"user"\|"text"\|"regex", ...}` — regex mode keeps its stricter bot-admin/owner-only gate (`isOwnerOrSudoBotAdmin`), unchanged from today. |
+
+## Bot View (highest-sensitivity surface — see `ARCHITECTURE.md` §8)
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/bot-view/chats` | Chats available to view (same visibility rule as group settings). |
+| `WS /api/v1/bot-view/ws?chat_id=` | Subscribes to a live feed of every message `main.zig` records for that chat, from the moment of connection onward (no history replay in the first cut — `GET` a chat's recent `messages` rows separately to backfill the pane on open). |
+| `POST /api/v1/bot-view/chats/:id/send` | `{text}` — calls `connector.sendMessage` for that chat's platform, exactly as any other reply. Confirmation-gated client-side given what this does; every send is audit-logged server-side regardless. |
+
+## What's deliberately not an endpoint (at least at first)
+
+- Anything touching secrets (§6 of `ARCHITECTURE.md`) — no write path
+  exists for them at all, by design, not just by omission.
+- Changing bot ownership — no endpoint yet (see `ARCHITECTURE.md` §11).
+- Per-chat module toggles — bot-wide only for now (see `ARCHITECTURE.md` §5).
