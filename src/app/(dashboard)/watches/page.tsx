@@ -1,11 +1,134 @@
-import { PlaceholderPage } from "@/components/PlaceholderPage";
+"use client";
+
+import { useState } from "react";
+import {
+  Body1,
+  Button,
+  Dropdown,
+  Field,
+  Input,
+  Link,
+  MessageBar,
+  MessageBarBody,
+  Option,
+  Spinner,
+  Table,
+  TableBody,
+  TableCell,
+  TableCellLayout,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from "@fluentui/react-components";
+import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { useMyChats } from "@/hooks/useMyChats";
+import { ApiError } from "@/lib/api";
+import { useCreateWatch, useDeleteWatch, useWatches } from "@/hooks/useWatches";
+
+function NewWatchForm() {
+  const s = useCommonStyles();
+  const { data: chats } = useMyChats();
+  const createWatch = useCreateWatch();
+
+  const [chatId, setChatId] = useState<number | undefined>(undefined);
+  const [feedUrl, setFeedUrl] = useState("");
+
+  const chatOptions = chats?.items ?? [];
+  const canSubmit = Boolean(chatId) && /^https?:\/\//.test(feedUrl.trim());
+
+  const submit = () => {
+    if (!chatId) return;
+    createWatch.mutate({ chat_id: chatId, feed_url: feedUrl.trim() }, { onSuccess: () => setFeedUrl("") });
+  };
+
+  return (
+    <Section title="New watch">
+      <div className={s.formGrid}>
+        <Field label="Chat">
+          <Dropdown
+            placeholder="Select a chat"
+            selectedOptions={chatId ? [String(chatId)] : []}
+            value={chatOptions.find((c) => c.id === chatId)?.title ?? chatOptions.find((c) => c.id === chatId)?.native_chat_id ?? ""}
+            onOptionSelect={(_, d) => setChatId(d.optionValue ? Number(d.optionValue) : undefined)}
+          >
+            {chatOptions.map((c) => (
+              <Option key={c.id} value={String(c.id)} text={c.title ?? c.native_chat_id}>
+                {c.title ?? c.native_chat_id}
+              </Option>
+            ))}
+          </Dropdown>
+        </Field>
+
+        <Field label="Feed URL">
+          <Input value={feedUrl} onChange={(_, d) => setFeedUrl(d.value)} placeholder="https://example.com/feed.xml" />
+        </Field>
+      </div>
+
+      {createWatch.isError && (
+        <MessageBar intent="error">
+          <MessageBarBody>{createWatch.error instanceof ApiError ? createWatch.error.message : "Couldn't add that watch."}</MessageBarBody>
+        </MessageBar>
+      )}
+
+      <Button appearance="primary" disabled={!canSubmit || createWatch.isPending} onClick={submit} style={{ alignSelf: "flex-start" }}>
+        Add watch
+      </Button>
+    </Section>
+  );
+}
 
 export default function WatchesPage() {
+  const s = useCommonStyles();
+  const { data, isPending, isError } = useWatches();
+  const deleteWatch = useDeleteWatch();
+
   return (
-    <PlaceholderPage
-      title="Watches"
-      phase="Phase 5a"
-      description="RSS/Atom feeds this chat is watching -- add and unwatch, mirroring /watch."
-    />
+    <div className={s.page}>
+      <PageHeader
+        title="Watches"
+        description="RSS/Atom feeds you've added, across every chat you're a member of -- mirrors /watch. Anyone in a chat can remove a watch there, not just whoever added it."
+      />
+
+      <NewWatchForm />
+
+      <Section title="Watching">
+        {isPending && <Spinner label="Loading watches..." />}
+        {isError && <Body1>Failed to load watches.</Body1>}
+        {data && data.items.length === 0 && <EmptyState text="Not watching any feeds." />}
+        {data && data.items.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHeaderCell>Chat</TableHeaderCell>
+                <TableHeaderCell>Feed</TableHeaderCell>
+                <TableHeaderCell />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.items.map((w) => (
+                <TableRow key={w.id}>
+                  <TableCell>
+                    <TableCellLayout>
+                      <Text weight="semibold">{w.chat_title ?? `Chat #${w.chat_id}`}</Text>
+                    </TableCellLayout>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={w.feed_url} target="_blank" rel="noreferrer">
+                      {w.feed_url}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Button size="small" onClick={() => deleteWatch.mutate(w.id)} disabled={deleteWatch.isPending}>
+                      Unwatch
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Section>
+    </div>
   );
 }
