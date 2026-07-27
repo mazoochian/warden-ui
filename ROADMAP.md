@@ -153,12 +153,18 @@ in for, deliberately read-only (lowest risk, fastest to real value).
 ## Phase 3 — Module toggles + dynamic config panel
 *Effort: M (was M, now slightly larger — see the provider hot-swap item
 below). Dependencies: Phase 0 (feature_flags/dynamic_config tables),
-Phase 2 (dashboard shell to hang this off of).*
+Phase 2 (dashboard shell to hang this off of). Status (2026-07-28):
+module-toggle backend + dispatch wiring done; dynamic_config wiring, the
+provider hot-swap, and the frontend are still ahead.*
 
-- Wire `feature_flags` reads into every module's dispatch branch in
+- ~~Wire `feature_flags` reads into every module's dispatch branch in
   `main.zig` (standalone commands) and into `tools/registry.zig`'s list
-  construction (LLM-tool-shaped features) — see `ARCHITECTURE.md` §5 for
-  exactly which features fall in which bucket.
+  construction (LLM-tool-shaped features)~~ Done — see `ARCHITECTURE.md`
+  §5's "Implemented 2026-07-28" note for the two policy calls made along
+  the way (gate mutation not viewing; LLM-tool natural-language
+  equivalents share their standalone module's key) and exactly what
+  `group_admin` covers. New `GET`/`PATCH /api/v1/admin/modules` (API.md),
+  gated by the same `requireAdmin` Phase 2 introduced, writes `audit_log`.
 - Wire `dynamic_config` reads into the handful of currently-env-only
   fields identified as safe in `ARCHITECTURE.md` §6's table — each one
   individually: read `dynamic_config` first, fall back to the existing
