@@ -205,20 +205,28 @@ two known pre-existing flakes ever seen).*
 
 ## Phase 4 — Per-chat group settings (group-admin-facing)
 *Effort: M. Dependencies: Phase 1 (RBAC/session), Phase 2 (chat directory
-to select from).*
+to select from). Status (2026-07-28): **done**.*
 
-- `GET`/`PATCH /chats/:id/settings` (persona, magic word, digest,
+- ~~`GET`/`PATCH /chats/:id/settings` (persona, magic word, digest,
   thinking override) — same store functions the slash commands already
-  call, gated by the live `connector.isGroupAdmin` check described in
-  `ARCHITECTURE.md` §7, not a cached DB role.
-- `GET`/`PATCH /me/settings` (personal reminder timezone/date/time
-  format) — the one piece of this whole project that's *pure* UI work on
-  top of already-complete backend logic, since `store/user_settings.zig`
-  already exists in full from this session's work. Good first
-  "real feature, not just plumbing" milestone.
-- Frontend: "My Groups" page (chats where the caller is a live admin, or
-  every chat if bot admin/owner), a per-group settings form, a personal
-  settings page.
+  call, gated by the live `connector.isGroupAdmin` check~~ Done —
+  `ServerContext` had zero connector access before this phase (only
+  needed DB access until now); gained `connectors: []const iface.Connector`
+  so `requireChatAccess`/`isLiveAdminOfChat` can make that live check.
+  Also shipped `GET /api/v1/chats?mine=true` and `GET
+  /api/v1/chats/:id/members` (API.md's other two Groups endpoints),
+  neither of which had its own bullet here but both were needed for the
+  frontend to be useful at all.
+- ~~`GET`/`PATCH /me/settings` (personal reminder timezone/date/time
+  format)~~ Done — genuinely was pure UI on top of already-complete
+  backend logic, as predicted.
+- ~~Frontend: "My Groups" page..., a per-group settings form, a personal
+  settings page~~ Done — `/groups` (list), `/groups/[id]` (settings form +
+  member list), `/settings` (personal). Both settings forms needed a
+  small deviation from the obvious "useEffect to seed state from loaded
+  data" pattern — the newer `react-hooks` lint rule flags synchronous
+  `setState` inside an effect, fixed by seeding a keyed child component's
+  `useState` directly from the loaded data instead.
 - This is the first phase regular (non-bot-admin) users get real value
   from the panel, not just owners/bot admins — worth calling out as a
   milestone, not just another checkbox.

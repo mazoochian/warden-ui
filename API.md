@@ -46,8 +46,8 @@ pages requires a valid session cookie; requests without one get `401`.
 | `DELETE /api/v1/me/identities/:identityId` | Unlink — refuses (`409`) if it's the account's last remaining identity. |
 | `GET /api/v1/me/sessions` | **Implemented (2026-07-28).** `{items: [{id, created_at, expires_at, user_agent, ip, current}]}` — every live `web_sessions` row for the account, most recent first. `ip` is always `null` for now (deferred until there's a reverse proxy and real `X-Forwarded-For` handling, Phase 7 — see `ARCHITECTURE.md`). `current: true` marks whichever session the request itself is authenticated with. |
 | `DELETE /api/v1/me/sessions/:sessionId` | **Implemented (2026-07-28).** Revoke a specific session (including, deliberately, the ability to revoke the one making the request — that's just "log out"). `404` (not `403`) if `sessionId` isn't a live session owned by the caller, to avoid confirming it exists at all to someone who doesn't own it. |
-| `GET /api/v1/me/settings` | The personal reminder timezone/date-format/time-format settings from `store/user_settings.zig` — same data `/menu`'s Settings → Personal already exposes, now over HTTP. |
-| `PATCH /api/v1/me/settings` | Update them. |
+| `GET /api/v1/me/settings` | **Implemented (2026-07-28).** `{utc_offset_minutes, date_format, time_format}` — same data `/menu`'s Settings → Personal already exposes, now over HTTP. Resolves against the account's *first* linked identity (documented simplification: no account-linking flow exists yet, so this is unambiguous today). |
+| `PATCH /api/v1/me/settings` | **Implemented (2026-07-28).** Whole-object body, same "no sparse partial update" contract as the chat settings endpoint above. `null` on any field clears that override. |
 | `GET /api/v1/me/credits` | Current LLM credit balance (`identities.credits`). |
 
 ## Admin — modules & config (owner/bot admin only)
@@ -77,10 +77,10 @@ pages requires a valid session cookie; requests without one get `401`.
 
 | Method & path | Purpose |
 |---|---|
-| `GET /api/v1/chats?mine=true` | Chats the caller can manage (live platform admin of, or bot-admin/owner sees all). |
-| `GET /api/v1/chats/:id/settings` | Persona text, magic word, digest enabled, thinking override — `chat_settings` as-is. |
-| `PATCH /api/v1/chats/:id/settings` | Update any subset — same effect as `/persona`, `/magicword`, `/thinking`, `/digest`. |
-| `GET /api/v1/chats/:id/members` | `chat_members` joined with `identities` for that chat. |
+| `GET /api/v1/chats?mine=true` | **Implemented (2026-07-28).** Chats the caller can manage: `{items: [{id, platform, native_chat_id, title, is_group_admin}]}` — every chat for owner/bot_admin, or only chats the caller is both a member of and currently a *live* platform admin of otherwise. `?mine=true` is the only supported mode (the query param is accepted but not actually inspected — there's no other listing shape yet). |
+| `GET /api/v1/chats/:id/settings` | **Implemented (2026-07-28).** `{persona, magic_word, digest_enabled, thinking_override}` — `chat_settings` as-is. |
+| `PATCH /api/v1/chats/:id/settings` | **Implemented (2026-07-28).** Body is the *whole* settings object, not a sparse partial update (JSON can't cleanly distinguish "field omitted" from "field explicitly null" without a wrapper type, and a settings-form PATCH naturally submits every field anyway) — same effect as `/persona`, `/magicword`, `/thinking`, `/digest`. |
+| `GET /api/v1/chats/:id/members` | **Implemented (2026-07-28).** `chat_members` joined with `identities` for that chat, bots excluded, most-recently-active first. |
 
 ## Feature parity — Reminders / Alerts / Watches
 
