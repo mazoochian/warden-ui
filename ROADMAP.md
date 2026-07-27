@@ -231,6 +231,40 @@ to select from). Status (2026-07-28): **done**.*
   from the panel, not just owners/bot admins — worth calling out as a
   milestone, not just another checkbox.
 
+## Phase 4.5 — Panel design refresh
+*Effort: M. Dependencies: Phase 4 (every real page that exists so far).
+Status (2026-07-28): done. Inserted between Phase 4 and Phase 5 at
+Armin's request, not originally planned.*
+
+Armin built a separate visual design reference while this app was being
+developed — github.com/mazoochian/warden-control-hub, a Lovable-generated
+prototype (mock data, no real backend). Turned out to independently use
+the exact same stack this app already does (Fluent UI React v9, same
+version) with a custom brand theme and a small shared component kit, just
+more polished — porting it in was a restyle, not a framework swap or a
+rewrite.
+
+- `brand-theme.ts`: saturated teal-cyan brand ramp + sharpened corners
+  (2/3/4/6px radii), replacing the stock `webLightTheme`/`webDarkTheme`.
+- `ui-kit.tsx`: shared `PageHeader`/`StatTile`/`Section`/`PlatformBadge`/
+  `EmptyState` + `useCommonStyles`, adopted across every real page instead
+  of each one inventing its own spacing/card conventions.
+- `AppShell`: collapsible grouped sidebar (Modules/Admin sections,
+  localStorage-persisted), active-item accent bar + filled/regular icon
+  swap, sticky topbar with the current section label + account menu.
+- Login page, and every real page built so far (Dashboard, Account &
+  Sessions, Admin Chats/Users + detail, Admin Modules, Admin Config, My
+  Groups + detail, Personal Settings) rebuilt on the new kit. Dashboard
+  also gained two sections the old version didn't have ("Busiest chats",
+  "Recent panel activity") since the reference had them and the data was
+  already available.
+- Every remaining `PlaceholderPage` stub (Alerts, Bot View, Convert,
+  Moderation, Reminders, Watches, Audit Log) restyled too, so the whole
+  app looks consistent even where the underlying feature isn't built yet.
+- No functional/RBAC/session logic changed anywhere — this was a visual
+  pass on top of everything already working, verified the same way as
+  every other phase (`npm run build` + `npm run lint` clean throughout).
+
 ## Phase 5 — Feature-parity forms
 *Effort: XL — the largest phase by raw surface area. Split into three
 sub-phases below rather than one block, so partial progress still ships.
