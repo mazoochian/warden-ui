@@ -320,11 +320,26 @@ Dependencies: Phase 4.*
   while pin itself is open to any live platform admin too, so wiring it up
   would under-scope who can use it. Follow-up work, not a blocker.
 
-### 5c — Convert
-- `POST /convert` multipart upload + synchronous conversion response.
-- Frontend: file drop zone + target-format picker. The interactive
-  multi-step `/convert` flow's UX doesn't need porting — a file picker
-  plus a format dropdown *is* already the non-interactive one-shot shape.
+### 5c — Convert — done (2026-07-27)
+- `POST /api/v1/convert`: multipart upload (`file` + `target_format`) ->
+  synchronous file download, calling `features/convert.zig`'s `convert()`
+  directly — not chat-scoped at all, unlike every other Phase 5 endpoint,
+  since it's a stateless utility with no persistence/chat side effects to
+  authorize against. New `src/api/multipart.zig`, a small hand-rolled
+  `multipart/form-data` parser (`std.http` has no built-in support for
+  *receiving* uploads, only the outgoing builder other code already uses).
+  Verified with a real image conversion through the local dev API, not
+  just unit tests.
+- Frontend: file drop zone + target-format picker, the dropdown filtered
+  by a hand-mirrored copy of `convert.zig`'s extension/family tables
+  (`src/lib/convertFormats.ts`) so it only ever offers combinations the
+  server will accept. The interactive multi-step `/convert` flow's UX
+  didn't need porting, as planned — a file picker plus a format dropdown
+  already is the non-interactive one-shot shape.
+
+**Phase 5 complete.** Next: Phase 6 (Bot View) or Phase 7 (Hardening &
+polish) — see each phase's own notes for what's still open before
+starting.
 
 ## Phase 6 — Bot View
 *Effort: L. Dependencies: Phase 0 (WebSocket infra), Phase 5b (chat
