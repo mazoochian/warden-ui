@@ -18,8 +18,9 @@ import {
   shorthands,
   tokens,
 } from "@fluentui/react-components";
-import { GlobeRegular, PersonRegular, ShieldTask24Filled } from "@fluentui/react-icons";
+import { GlobeRegular, PersonRegular } from "@fluentui/react-icons";
 import { useMutation } from "@tanstack/react-query";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 
@@ -44,11 +45,6 @@ const useStyles = makeStyles({
   mark: {
     width: "36px",
     height: "36px",
-    display: "grid",
-    placeItems: "center",
-    backgroundColor: tokens.colorBrandBackground,
-    color: tokens.colorNeutralForegroundOnBrand,
-    borderRadius: tokens.borderRadiusSmall,
     flexShrink: 0,
   },
   muted: { color: tokens.colorNeutralForeground3 },
@@ -84,9 +80,7 @@ export default function LoginPage() {
     <div className={styles.page}>
       <Card className={styles.card}>
         <div className={styles.brand}>
-          <div className={styles.mark}>
-            <ShieldTask24Filled />
-          </div>
+          <Image src="/warden-mark.png" alt="Warden" width={36} height={36} className={styles.mark} priority />
           <div>
             <Title2 as="h1" block>
               Warden

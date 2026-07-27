@@ -48,9 +48,9 @@ import {
   Rss24Regular,
   Settings24Filled,
   Settings24Regular,
-  ShieldTask24Regular,
   SignOut20Regular,
 } from "@fluentui/react-icons";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
@@ -89,11 +89,6 @@ const useStyles = makeStyles({
   brandMark: {
     width: "26px",
     height: "26px",
-    display: "grid",
-    placeItems: "center",
-    backgroundColor: tokens.colorBrandBackground,
-    color: tokens.colorNeutralForegroundOnBrand,
-    borderRadius: tokens.borderRadiusSmall,
     flexShrink: 0,
   },
   navScroll: { overflowY: "auto", flexGrow: 1, ...shorthands.padding("8px", "8px", "16px") },
@@ -281,9 +276,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className={s.root}>
       <nav className={`${s.nav} ${collapsed ? s.navCollapsed : ""}`} aria-label="Main">
         <div className={s.brand}>
-          <div className={s.brandMark}>
-            <ShieldTask24Regular fontSize={18} />
-          </div>
+          <Image src="/warden-mark.png" alt="Warden" width={26} height={26} className={s.brandMark} priority />
           {!collapsed && <Text weight="semibold">Warden</Text>}
         </div>
         <div className={s.navScroll}>
