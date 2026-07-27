@@ -21,6 +21,7 @@ import {
   DataBarVerticalRegular,
   HomeRegular,
   PeopleTeamRegular,
+  PersonRegular,
   SettingsRegular,
   ShieldRegular,
   SignOutRegular,
@@ -153,6 +154,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <NavItem icon={<SettingsRegular />} value="/settings" href="/settings">
             Personal Settings
+          </NavItem>
+          <NavItem icon={<PersonRegular />} value="/account" href="/account">
+            Account &amp; Sessions
           </NavItem>
         </NavDrawerBody>
       </NavDrawer>

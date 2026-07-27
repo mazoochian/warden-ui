@@ -44,8 +44,8 @@ pages requires a valid session cookie; requests without one get `401`.
 |---|---|
 | `GET /api/v1/me/identities` | Every identity linked to the caller's account. |
 | `DELETE /api/v1/me/identities/:identityId` | Unlink — refuses (`409`) if it's the account's last remaining identity. |
-| `GET /api/v1/me/sessions` | Every live `web_sessions` row for the account (device/IP/last-active) — "log out everywhere" material. |
-| `DELETE /api/v1/me/sessions/:sessionId` | Revoke a specific session (including, deliberately, the ability to revoke the one making the request — that's just "log out"). |
+| `GET /api/v1/me/sessions` | **Implemented (2026-07-28).** `{items: [{id, created_at, expires_at, user_agent, ip, current}]}` — every live `web_sessions` row for the account, most recent first. `ip` is always `null` for now (deferred until there's a reverse proxy and real `X-Forwarded-For` handling, Phase 7 — see `ARCHITECTURE.md`). `current: true` marks whichever session the request itself is authenticated with. |
+| `DELETE /api/v1/me/sessions/:sessionId` | **Implemented (2026-07-28).** Revoke a specific session (including, deliberately, the ability to revoke the one making the request — that's just "log out"). `404` (not `403`) if `sessionId` isn't a live session owned by the caller, to avoid confirming it exists at all to someone who doesn't own it. |
 | `GET /api/v1/me/settings` | The personal reminder timezone/date-format/time-format settings from `store/user_settings.zig` — same data `/menu`'s Settings → Personal already exposes, now over HTTP. |
 | `PATCH /api/v1/me/settings` | Update them. |
 | `GET /api/v1/me/credits` | Current LLM credit balance (`identities.credits`). |
