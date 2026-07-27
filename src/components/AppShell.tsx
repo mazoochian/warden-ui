@@ -2,6 +2,7 @@
 
 import {
   Avatar,
+  Button,
   Hamburger,
   NavCategory,
   NavCategoryItem,
@@ -22,9 +23,13 @@ import {
   PeopleTeamRegular,
   SettingsRegular,
   ShieldRegular,
+  SignOutRegular,
 } from "@fluentui/react-icons";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
+import { useInvalidateSession, useSession } from "@/hooks/useSession";
 import { ThemeToggle } from "./ThemeToggle";
 
 const useStyles = makeStyles({
@@ -56,6 +61,11 @@ const useStyles = makeStyles({
     padding: tokens.spacingVerticalL,
     overflowY: "auto",
   },
+  accountArea: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+  },
 });
 
 /**
@@ -70,6 +80,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(true);
+  const { data: session } = useSession();
+  const invalidateSession = useInvalidateSession();
+  const logout = useMutation({
+    mutationFn: () => apiFetch("/api/v1/auth/logout", { method: "POST" }),
+    onSuccess: () => {
+      invalidateSession();
+      router.replace("/login");
+    },
+  });
+  const displayName = session?.authenticated ? session.display_name : "Signed out";
 
   return (
     <div className={styles.layout}>
@@ -143,7 +163,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Subtitle2>Control panel</Subtitle2>
           <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalM }}>
             <ThemeToggle />
-            <Avatar name="Signed out" size={28} />
+            <div className={styles.accountArea}>
+              <Avatar
+                name={displayName}
+                image={session?.authenticated && session.avatar_url ? { src: session.avatar_url } : undefined}
+                size={28}
+              />
+              <Button
+                appearance="subtle"
+                icon={<SignOutRegular />}
+                onClick={() => logout.mutate()}
+                disabled={logout.isPending}
+              >
+                Log out
+              </Button>
+            </div>
           </div>
         </div>
         <main className={styles.main}>{children}</main>

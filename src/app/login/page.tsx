@@ -1,7 +1,26 @@
 "use client";
 
-import { Body1, Button, Card, CardHeader, Caption1, Title1, makeStyles, tokens } from "@fluentui/react-components";
-import { ChatRegular, GlobeRegular, PersonRegular } from "@fluentui/react-icons";
+import { TelegramAuthUser, TelegramLoginButton } from "@/components/TelegramLoginButton";
+import { apiFetch } from "@/lib/api";
+import { useInvalidateSession, useSession } from "@/hooks/useSession";
+import { useProviders } from "@/hooks/useProviders";
+import {
+  Body1,
+  Button,
+  Card,
+  CardHeader,
+  Caption1,
+  MessageBar,
+  MessageBarBody,
+  Spinner,
+  Title1,
+  makeStyles,
+  tokens,
+} from "@fluentui/react-components";
+import { GlobeRegular, PersonRegular } from "@fluentui/react-icons";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect } from "react";
 
 const useStyles = makeStyles({
   page: {
@@ -21,33 +40,64 @@ const useStyles = makeStyles({
   buttons: {
     display: "flex",
     flexDirection: "column",
+    alignItems: "flex-start",
     gap: tokens.spacingVerticalS,
     marginTop: tokens.spacingVerticalM,
   },
 });
 
-/**
- * Visual shell only, per Phase 1's scope (see ROADMAP.md) -- real
- * Telegram Login Widget / Google OAuth / generic-OIDC wiring needs
- * externally-registered OAuth clients (a Google Cloud OAuth client id,
- * the bot's domain set in @BotFather for the Telegram widget) that only
- * Armin can set up, so those buttons don't do anything real yet. Backend
- * endpoints for all three already exist as stubs per API.md.
- */
 export default function LoginPage() {
   const styles = useStyles();
+  const router = useRouter();
+  const { data: session } = useSession();
+  const { data: providers, isLoading: providersLoading } = useProviders();
+  const invalidateSession = useInvalidateSession();
+
+  useEffect(() => {
+    if (session?.authenticated) router.replace("/");
+  }, [session, router]);
+
+  const telegramLogin = useMutation({
+    mutationFn: (user: TelegramAuthUser) =>
+      apiFetch("/api/v1/auth/telegram/callback", {
+        method: "POST",
+        body: JSON.stringify(user),
+      }),
+    onSuccess: () => {
+      invalidateSession();
+      router.replace("/");
+    },
+  });
+
+  const handleTelegramAuth = useCallback(
+    (user: TelegramAuthUser) => telegramLogin.mutate(user),
+    [telegramLogin],
+  );
+
   return (
     <div className={styles.page}>
       <Card className={styles.card}>
         <CardHeader header={<Title1>warden</Title1>} description="Sign in to the control panel" />
-        <Body1>
-          Real login isn&apos;t wired up yet (Phase 1, in progress) -- these buttons are placeholders showing the
-          intended flow.
-        </Body1>
+
+        {telegramLogin.isError && (
+          <MessageBar intent="error">
+            <MessageBarBody>Sign-in failed: {telegramLogin.error.message}</MessageBarBody>
+          </MessageBar>
+        )}
+
         <div className={styles.buttons}>
-          <Button appearance="primary" icon={<ChatRegular />} disabled>
-            Continue with Telegram
-          </Button>
+          {providersLoading && <Spinner size="tiny" label="Loading sign-in options..." />}
+
+          {!providersLoading && providers?.telegram && (
+            <TelegramLoginButton botUsername={providers.telegram.bot_username} onAuth={handleTelegramAuth} />
+          )}
+          {!providersLoading && !providers?.telegram && (
+            <Body1>
+              Telegram sign-in isn&apos;t configured on this deployment yet (
+              <code>WARDEN_TELEGRAM_BOT_USERNAME</code> unset).
+            </Body1>
+          )}
+
           <Button appearance="secondary" icon={<PersonRegular />} disabled>
             Continue with Google
           </Button>
@@ -55,7 +105,11 @@ export default function LoginPage() {
             Continue with SSO
           </Button>
         </div>
-        <Caption1>Telegram Login resolves straight to your existing bot identity, if you have one.</Caption1>
+
+        <Caption1>
+          Telegram Login resolves straight to your existing bot identity, if you have one. Google/SSO aren&apos;t
+          wired up yet.
+        </Caption1>
       </Card>
     </div>
   );

@@ -29,14 +29,14 @@ pages requires a valid session cookie; requests without one get `401`.
 
 | Method & path | Purpose |
 |---|---|
-| `GET /api/v1/auth/providers` | Public. Lists enabled login methods (Telegram widget config, Google if configured, any enabled rows from `oauth_providers`) so the login page can render itself without hardcoding what's available. |
-| `POST /api/v1/auth/telegram/callback` | Body: the Telegram Login Widget's returned fields. Verifies `hash` (HMAC-SHA256 against the bot token), resolves/creates the matching `identities` row + `accounts` row, issues a session cookie. |
+| `GET /api/v1/auth/providers` | **Implemented (2026-07-28).** Public. `{telegram: {bot_username} \| null, google: null, oidc: []}` — Google/OIDC always empty until those methods are wired up. |
+| `POST /api/v1/auth/telegram/callback` | **Implemented (2026-07-28).** Body: the Telegram Login Widget's returned fields. Verifies `hash` (HMAC-SHA256 against the bot token, per `src/api/telegram_login.zig`), resolves/creates the matching `identities` row + `accounts` row, issues a session cookie. |
 | `GET /api/v1/auth/google/start` | Redirects to Google's `/authorize`. |
 | `GET /api/v1/auth/google/callback` | Handles the redirect back, exchanges `code` server-side, calls `/userinfo`, resolves/creates identity+account, issues session cookie. |
 | `GET /api/v1/auth/oidc/:providerId/start` / `.../callback` | Same shape as Google, generic over any enabled `oauth_providers` row. |
 | `POST /api/v1/auth/link/:method/start` | Requires an existing session. Same redirect dance as above, but on success adds an `account_identities` row to the *current* account instead of creating a new one. |
 | `POST /api/v1/auth/logout` | Revokes the current `web_sessions` row, clears the cookie. |
-| `GET /api/v1/auth/session` | Current account: `{account_id, display_name, avatar_url, identities: [...], roles: {owner, bot_admin, admin_of_chats: [chat_id, ...]}}`. The frontend's one call on every page load to know what to render. |
+| `GET /api/v1/auth/session` | **Implemented (2026-07-28).** `{authenticated: false}`, or `{authenticated: true, account_id, display_name, avatar_url, identity_ids: [...]}`. `roles` isn't in the response yet — deferred until an RBAC-gated page actually needs it (likely Phase 2); `identity_ids` is bare ids, not full identity objects, until something needs more. The frontend's one call on every page load to know what to render. |
 
 ## Account
 
