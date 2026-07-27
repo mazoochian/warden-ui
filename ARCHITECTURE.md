@@ -373,3 +373,11 @@ whichever phase first bumps into them.
 - Real JWKS/RS256 ID-token verification as a hardening pass once the
   "trust the token-endpoint TLS channel" simplification (§3.1) needs
   tightening — e.g. before onboarding a security-sensitive customer.
+
+**Action item, not a decision (2026-07-28):** Telegram Login is fully
+implemented (§3.1, backend + frontend) but won't actually authenticate
+anyone until Armin registers the bot's serving domain via `@BotFather`'s
+`/setdomain` command — Telegram's widget silently no-ops without this.
+Also set `WARDEN_TELEGRAM_BOT_USERNAME` in warden's `.env` once there's a
+real domain to register (currently unset, so the login page correctly
+shows "Telegram sign-in isn't configured" instead of a broken button).
