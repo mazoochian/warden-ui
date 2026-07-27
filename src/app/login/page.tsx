@@ -18,7 +18,7 @@ import {
   shorthands,
   tokens,
 } from "@fluentui/react-components";
-import { GlobeRegular, PersonRegular } from "@fluentui/react-icons";
+import { GlobeRegular } from "@fluentui/react-icons";
 import { useMutation } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -113,17 +113,22 @@ export default function LoginPage() {
           </Caption1>
         </div>
 
-        <Divider>or</Divider>
-
-        <div className={styles.stack}>
-          <Button disabled icon={<PersonRegular />}>
-            Continue with Google
-          </Button>
-          <Button disabled icon={<GlobeRegular />}>
-            Continue with SSO
-          </Button>
-          <Caption1 className={styles.muted}>Google and SSO aren&apos;t configured on this deployment yet.</Caption1>
-        </div>
+        {!providersLoading && (providers?.oidc?.length ?? 0) > 0 && (
+          <>
+            <Divider>or</Divider>
+            <div className={styles.stack}>
+              {providers!.oidc.map((p) => (
+                <Button key={p.id} as="a" href={`/api/v1/auth/oidc/${p.id}/start`} icon={<GlobeRegular />}>
+                  Continue with {p.name}
+                </Button>
+              ))}
+              <Caption1 className={styles.muted}>
+                Redirects to {providers!.oidc[0].name}&apos;s own sign-in page (OIDC) -- Warden never sees your
+                password there either.
+              </Caption1>
+            </div>
+          </>
+        )}
       </Card>
     </div>
   );
