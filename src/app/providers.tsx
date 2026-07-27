@@ -1,14 +1,15 @@
 "use client";
 
-import { FluentProvider, webDarkTheme, webLightTheme } from "@fluentui/react-components";
+import { FluentProvider } from "@fluentui/react-components";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { wardenDarkTheme, wardenLightTheme } from "./brand-theme";
 import { ThemeProvider, useTheme } from "./theme";
 
 function FluentThemeBridge({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
   return (
-    <FluentProvider theme={theme === "dark" ? webDarkTheme : webLightTheme} style={{ minHeight: "100vh" }}>
+    <FluentProvider theme={theme === "dark" ? wardenDarkTheme : wardenLightTheme} style={{ minHeight: "100vh" }}>
       {children}
     </FluentProvider>
   );
