@@ -153,9 +153,8 @@ in for, deliberately read-only (lowest risk, fastest to real value).
 ## Phase 3 — Module toggles + dynamic config panel
 *Effort: M (was M, now slightly larger — see the provider hot-swap item
 below). Dependencies: Phase 0 (feature_flags/dynamic_config tables),
-Phase 2 (dashboard shell to hang this off of). Status (2026-07-28):
-module-toggle backend + dispatch wiring done; dynamic_config wiring, the
-provider hot-swap, and the frontend are still ahead.*
+Phase 2 (dashboard shell to hang this off of). Status (2026-07-28): done
+except the provider hot-swap refactor.*
 
 - ~~Wire `feature_flags` reads into every module's dispatch branch in
   `main.zig` (standalone commands) and into `tools/registry.zig`'s list
@@ -165,27 +164,34 @@ provider hot-swap, and the frontend are still ahead.*
   equivalents share their standalone module's key) and exactly what
   `group_admin` covers. New `GET`/`PATCH /api/v1/admin/modules` (API.md),
   gated by the same `requireAdmin` Phase 2 introduced, writes `audit_log`.
-- Wire `dynamic_config` reads into the handful of currently-env-only
-  fields identified as safe in `ARCHITECTURE.md` §6's table — each one
-  individually: read `dynamic_config` first, fall back to the existing
-  env-sourced `Config` value if no DB row exists yet, so this ships with
-  zero behavior change until someone actually flips something.
+- ~~Wire `dynamic_config` reads into the handful of currently-env-only
+  fields identified as safe in `ARCHITECTURE.md` §6's table~~ Done for
+  the 8 that checking actual read sites confirmed are genuinely live
+  (`resolveLlmDynamicSettings` bulk-fetches the 6 LLM-turn ones in one
+  query rather than six round trips) — pool size/worker counts/confirm-
+  convert-menu timeouts turned out to be startup-only despite the
+  original table implying otherwise; corrected in `ARCHITECTURE.md` §6
+  rather than wired live, since that needs those structures reworked,
+  not just a DB read. New `GET`/`PATCH /api/v1/admin/config` (masked
+  secrets read live from `Config`, never touching `dynamic_config`).
 - Decided 2026-07-28 (Armin): `WARDEN_LLM_PROVIDER` becomes hot-swappable
   here too, not just the model — the provider object currently gets
   constructed once at startup, so this needs a small refactor to
   re-resolve the active provider per call (or on write) instead of
   holding a fixed instance. Scoped to this phase since it's the same
   `dynamic_config` plumbing as everything else above, just one field
-  that needs the extra indirection.
-- Frontend: a modules page (toggle switches, one per feature, with the
-  LLM-tool ones visually grouped separately from standalone commands
-  since they behave differently under the hood even though the UI
-  treats them the same) and a config page (grouped by category, secrets
-  rendered masked and non-interactive per the `ARCHITECTURE.md` §6
-  table).
-- Every toggle/change writes to `audit_log` (already built in Phase 0) —
-  surface *some* of that trail on this same page (a lightweight
-  "recently changed" list), full audit log browsing waits for Phase 7.
+  that needs the extra indirection. **Not started** — the one item left
+  in this phase, deliberately saved for last since it's the riskiest
+  (touches the core LLM call path).
+- ~~Frontend: a modules page (toggle switches...) and a config page
+  (grouped by category, secrets rendered masked and non-interactive)~~
+  Done — `/admin/modules` (Commands vs. LLM tools grouping),
+  `/admin/config` (live settings with inline save, masked secrets
+  section), both ending in a `RecentChanges` widget.
+- ~~Every toggle/change writes to `audit_log`... surface *some* of that
+  trail on this same page~~ Done — new `GET /api/v1/admin/audit-log`
+  (thin wrapper over the Phase-0-built `audit_log.list`, never exposed
+  over HTTP until now), called once per action and merged client-side.
 
 ## Phase 4 — Per-chat group settings (group-admin-facing)
 *Effort: M. Dependencies: Phase 1 (RBAC/session), Phase 2 (chat directory
