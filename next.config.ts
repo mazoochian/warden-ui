@@ -9,6 +9,9 @@ import type { NextConfig } from "next";
 const apiOrigin = process.env.WARDEN_API_ORIGIN;
 
 const nextConfig: NextConfig = {
+  // A minimal, self-contained `.next/standalone` output for the production
+  // Docker image (see Dockerfile) -- doesn't affect `next dev`.
+  output: "standalone",
   async rewrites() {
     if (!apiOrigin) return [];
     return [{ source: "/api/:path*", destination: `${apiOrigin}/api/:path*` }];
