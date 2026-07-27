@@ -149,7 +149,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   Users
                 </NavSubItem>
                 <NavSubItem value="/admin/modules" href="/admin/modules">
-                  Modules &amp; Config
+                  Modules
+                </NavSubItem>
+                <NavSubItem value="/admin/config" href="/admin/config">
+                  Config
                 </NavSubItem>
                 <NavSubItem value="/bot-view" href="/bot-view">
                   Bot View
