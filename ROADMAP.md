@@ -270,13 +270,28 @@ rewrite.
 sub-phases below rather than one block, so partial progress still ships.
 Dependencies: Phase 4.*
 
-### 5a — Reminders, Alerts, Watches
-- CRUD endpoints per `API.md`'s shapes.
-- Frontend: a real date/time picker for reminder creation (the "when"
-  payload shape was deliberately designed in `API.md` to mirror the
-  wizard's own step data, so this form and the `/menu` wizard describe
-  the same underlying moment two different ways — a native picker here,
-  stepper buttons there) plus list/cancel views for all three modules.
+### 5a — Reminders, Alerts, Watches — done (2026-07-27)
+- CRUD endpoints per `API.md`'s shapes: `GET/POST/DELETE` for
+  `/api/v1/{reminders,alerts,watches}`. Identity-scoped by default (own
+  items across every chat, not chat-scoped like the bot's own in-chat
+  `/reminders`/`/alerts`/`/watches` commands — a deliberate difference,
+  see `API.md`), `?chat_id=` narrows, `?identity_id=` (owner/bot_admin
+  only) acts on behalf of someone else. Authorization mirrors the slash
+  commands exactly (setter-or-owner to cancel a reminder/alert, any chat
+  member to add/remove a watch).
+- Frontend: a real date/time picker for reminder creation (native
+  `<input type="date">`/`<input type="time">`, plus a duration mode) — the
+  "when" payload shape mirrors the `/menu` wizard's own step data, so this
+  form and the wizard describe the same underlying moment two different
+  ways — a native picker here, stepper buttons there — plus list/create/
+  cancel views for all three modules.
+- Known gap, not fixed here: the chat picker in all three create forms
+  reuses `useMyChats` (`?mine=true`, "chats I can *manage*"), so a regular
+  member of a chat they don't administer can't yet pick that chat from
+  this form, even though the backend's own `chat_members.isMember` check
+  would allow the create. Pre-existing gap in the panel's chat-selection
+  model (Groups has the same limit), not new to this phase — a real
+  "chats I'm a member of" listing endpoint would need its own phase.
 
 ### 5b — Group Administration actions
 - Kick/ban/mute/unmute/pin/unpin/promote/demote/redact endpoints, each
