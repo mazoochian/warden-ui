@@ -1,17 +1,12 @@
 "use client";
 
-import { TelegramAuthUser, TelegramLoginButton } from "@/components/TelegramLoginButton";
-import { apiFetch } from "@/lib/api";
-import { useInvalidateSession, useSession } from "@/hooks/useSession";
+import { useSession } from "@/hooks/useSession";
 import { useProviders } from "@/hooks/useProviders";
 import {
   Body1,
   Button,
   Card,
   Caption1,
-  Divider,
-  MessageBar,
-  MessageBarBody,
   Spinner,
   Title2,
   makeStyles,
@@ -19,10 +14,9 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { GlobeRegular } from "@fluentui/react-icons";
-import { useMutation } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 
 const useStyles = makeStyles({
   page: {
@@ -56,25 +50,10 @@ export default function LoginPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { data: providers, isLoading: providersLoading } = useProviders();
-  const invalidateSession = useInvalidateSession();
 
   useEffect(() => {
     if (session?.authenticated) router.replace("/");
   }, [session, router]);
-
-  const telegramLogin = useMutation({
-    mutationFn: (user: TelegramAuthUser) =>
-      apiFetch("/api/v1/auth/telegram/callback", {
-        method: "POST",
-        body: JSON.stringify(user),
-      }),
-    onSuccess: () => {
-      invalidateSession();
-      router.replace("/");
-    },
-  });
-
-  const handleTelegramAuth = useCallback((user: TelegramAuthUser) => telegramLogin.mutate(user), [telegramLogin]);
 
   return (
     <div className={styles.page}>
@@ -89,46 +68,27 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {telegramLogin.isError && (
-          <MessageBar intent="error">
-            <MessageBarBody>Sign-in failed: {telegramLogin.error.message}</MessageBarBody>
-          </MessageBar>
-        )}
-
         <div className={styles.stack}>
           {providersLoading && <Spinner size="tiny" label="Loading sign-in options..." />}
 
-          {!providersLoading && providers?.telegram && (
-            <TelegramLoginButton botUsername={providers.telegram.bot_username} onAuth={handleTelegramAuth} />
+          {!providersLoading && (providers?.oidc?.length ?? 0) === 0 && (
+            <Body1 className={styles.muted}>No sign-in provider is configured on this deployment yet.</Body1>
           )}
-          {!providersLoading && !providers?.telegram && (
-            <Body1 className={styles.muted}>
-              Telegram sign-in isn&apos;t configured on this deployment yet (<code>WARDEN_TELEGRAM_BOT_USERNAME</code>{" "}
-              unset).
-            </Body1>
-          )}
-          <Caption1 className={styles.muted}>
-            Uses Telegram&apos;s official login widget and resolves straight to your existing bot identity, if you
-            have one. Warden never asks for a password.
-          </Caption1>
-        </div>
 
-        {!providersLoading && (providers?.oidc?.length ?? 0) > 0 && (
-          <>
-            <Divider>or</Divider>
-            <div className={styles.stack}>
-              {providers!.oidc.map((p) => (
-                <Button key={p.id} as="a" href={`/api/v1/auth/oidc/${p.id}/start`} icon={<GlobeRegular />}>
-                  Continue with {p.name}
-                </Button>
-              ))}
-              <Caption1 className={styles.muted}>
-                Redirects to {providers!.oidc[0].name}&apos;s own sign-in page (OIDC) -- Warden never sees your
-                password there either.
-              </Caption1>
-            </div>
-          </>
-        )}
+          {!providersLoading &&
+            providers?.oidc.map((p) => (
+              <Button key={p.id} as="a" href={`/api/v1/auth/oidc/${p.id}/start`} appearance="primary" icon={<GlobeRegular />}>
+                Continue with {p.name}
+              </Button>
+            ))}
+
+          {!providersLoading && (providers?.oidc?.length ?? 0) > 0 && (
+            <Caption1 className={styles.muted}>
+              Redirects to {providers!.oidc[0].name}&apos;s own sign-in page (OIDC). Warden never sees your password
+              there.
+            </Caption1>
+          )}
+        </div>
       </Card>
     </div>
   );

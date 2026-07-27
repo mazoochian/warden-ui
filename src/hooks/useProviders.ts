@@ -4,7 +4,6 @@ import { apiFetch } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 
 export type Providers = {
-  telegram: { bot_username: string } | null;
   google: null;
   oidc: { id: string; name: string }[];
 };
