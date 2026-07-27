@@ -237,6 +237,36 @@ toggling isn't ruled out for later, but isn't in scope for the initial
 build; if wanted later it's an additive `chat_feature_flags` table
 layered the same way, not a redesign.
 
+**Implemented 2026-07-28** (`store/feature_flags.zig`'s `known_modules`,
+`main.zig`'s dispatch, `filterEnabledTools` in `main.zig`). Two policy
+decisions made during implementation, not spelled out above:
+
+- **A toggle gates mutation, not viewing.** `/reminders`, `/alerts`,
+  `/watches` (the list commands) and bare `/persona` (viewing the current
+  override) all stay available regardless of their module's toggle state
+  — only the commands that *create or change* something are gated. This
+  wasn't explicit in the original design; it fell out of thinking through
+  what "disabled" should actually mean (stop new instances of a feature,
+  don't hide data that already exists).
+- **The LLM-tool-shaped natural-language equivalents of standalone
+  modules are gated by their standalone module's key, not left always-on.**
+  `set_reminder`/`set_alert`/`begin_file_conversion`/`convert_file` (the
+  LLM tools) map back to `"reminders"`/`"alerts"`/`"convert"` respectively
+  in `filterEnabledTools`'s mapping — disabling "Reminders" bot-wide stops
+  *every* way to create one (the `/remind` command, the `/menu` wizard,
+  and the natural-language tool), not just the slash command. A toggle
+  that left the LLM path open would be a half-measure a careful admin
+  would reasonably call a bug.
+- **`group_admin` covers everything Phase 5b's moderation bucket does**
+  (mute/unmute/pin/unpin/delete/promote/demote/kick/ban/confirm/cancel/
+  redact) and is gated at *both* independent entry points — the slash
+  commands in `main.zig`'s top-level dispatch, and the `/menu` equivalents
+  (`menuPerform`/`menuResumeAwaitingInput`, via a small `menuNodeModuleKey`
+  lookup table) — since `/menu`'s action handlers call straight into
+  `features/group_admin.zig`/`features/redact.zig`, entirely bypassing the
+  top-level command dispatch. Missing either one would have left a real
+  bypass, not just an inconsistency.
+
 ## 6. "Current .env settings, with the ability to change them"
 
 `Config` today is loaded **once**, at process startup, directly from

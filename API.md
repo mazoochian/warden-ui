@@ -54,8 +54,8 @@ pages requires a valid session cookie; requests without one get `401`.
 
 | Method & path | Purpose |
 |---|---|
-| `GET /api/v1/admin/modules` | Every row in `feature_flags` with its current `enabled` state. |
-| `PATCH /api/v1/admin/modules/:module` | `{"enabled": false}` — flips one module. |
+| `GET /api/v1/admin/modules` | **Implemented (2026-07-28).** `{items: [{key, label, category, enabled}]}` — every module in `store/feature_flags.zig`'s `known_modules` (the single source of truth `main.zig`'s dispatch gates and the LLM tool filter both check against too), unioned with whatever's been explicitly toggled. `category` is `"standalone"` or `"llm_tool"`, for the frontend's grouping requirement. |
+| `PATCH /api/v1/admin/modules/:module` | **Implemented (2026-07-28).** `{"enabled": false}` — flips one module, `404` for an unknown key. See `ARCHITECTURE.md` §5 for exactly what disabling a module means at the dispatch level — notably, a toggle blocks *creating/changing* things (the `/remind` command, the `set_reminder` LLM tool, the reminders wizard in `/menu`, etc.) but deliberately leaves read-only actions (`/reminders`, `/alerts`, `/watches` listings) available regardless, and `group_admin` covers everything in `ROADMAP.md` Phase 5b's moderation bucket (mute/unmute/pin/unpin/delete/promote/demote/kick/ban/confirm/cancel/redact), gated at both the slash-command dispatch and the `/menu` equivalents since they're independent entry points to the same actions. |
 | `GET /api/v1/admin/config` | Every `dynamic_config` key, each with its current value and whether it's DB-overridden or falling back to the env default — plus the *masked* secret fields from §6 of `ARCHITECTURE.md` (shown, never returned in full, never accepted on write). |
 | `PATCH /api/v1/admin/config/:key` | `{"value": "..."}` — rejected (`403`) for any key classified as a secret. |
 | `GET /api/v1/admin/audit-log` | Paginated audit trail, filterable by `?action=`/`?account_id=`/`?since=`. |
