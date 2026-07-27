@@ -30,7 +30,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import { useInvalidateSession, useSession } from "@/hooks/useSession";
+import { isAdmin, useInvalidateSession, useSession } from "@/hooks/useSession";
 import { ThemeToggle } from "./ThemeToggle";
 
 const useStyles = makeStyles({
@@ -91,6 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     },
   });
   const displayName = session?.authenticated ? session.display_name : "Signed out";
+  const admin = isAdmin(session);
 
   return (
     <div className={styles.layout}>
@@ -137,20 +138,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </NavSubItemGroup>
           </NavCategory>
 
-          <NavCategory value="admin">
-            <NavCategoryItem icon={<ShieldRegular />}>Admin</NavCategoryItem>
-            <NavSubItemGroup>
-              <NavSubItem value="/admin/modules" href="/admin/modules">
-                Modules &amp; Config
-              </NavSubItem>
-              <NavSubItem value="/bot-view" href="/bot-view">
-                Bot View
-              </NavSubItem>
-              <NavSubItem value="/admin/audit-log" href="/admin/audit-log">
-                Audit Log
-              </NavSubItem>
-            </NavSubItemGroup>
-          </NavCategory>
+          {admin && (
+            <NavCategory value="admin">
+              <NavCategoryItem icon={<ShieldRegular />}>Admin</NavCategoryItem>
+              <NavSubItemGroup>
+                <NavSubItem value="/admin/chats" href="/admin/chats">
+                  Chats
+                </NavSubItem>
+                <NavSubItem value="/admin/identities" href="/admin/identities">
+                  Users
+                </NavSubItem>
+                <NavSubItem value="/admin/modules" href="/admin/modules">
+                  Modules &amp; Config
+                </NavSubItem>
+                <NavSubItem value="/bot-view" href="/bot-view">
+                  Bot View
+                </NavSubItem>
+                <NavSubItem value="/admin/audit-log" href="/admin/audit-log">
+                  Audit Log
+                </NavSubItem>
+              </NavSubItemGroup>
+            </NavCategory>
+          )}
 
           <NavItem icon={<SettingsRegular />} value="/settings" href="/settings">
             Personal Settings

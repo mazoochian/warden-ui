@@ -105,30 +105,50 @@ still ahead.*
   used in production).
 - Account linking flow (`ARCHITECTURE.md` §3.3): "add another login
   method" from an account settings page.
-- Basic app shell: nav, the account menu, session list (`/me/sessions`)
-  with per-session revoke, logout.
+- ~~Basic app shell: nav, the account menu, session list (`/me/sessions`)
+  with per-session revoke, logout.~~ Done (2026-07-28): `/account` page,
+  `GET`/`DELETE /api/v1/me/sessions`.
 - The two open questions that used to block later phases (Bot View's
   access tier, ownership-transfer scope) are now decided — see
   `ARCHITECTURE.md` §11 — so this phase's own scope is unchanged, just no
   longer waiting on anything.
+- Google OAuth2, generic OIDC, and account linking remain **not started**
+  — all three need external setup (a registered OAuth client, a real IdP
+  to test against) that's Armin's to do, not a code task on its own.
 
 ## Phase 2 — Read-only admin dashboard
-*Effort: M. Dependencies: Phase 1.*
+*Effort: M. Dependencies: Phase 1. Status: done (2026-07-28), on top of
+Telegram-Login-only auth (Google/OIDC not required for this phase --
+`roles: {owner, bot_admin}` only needs *a* logged-in account, not a
+specific login method).*
 
 The first phase where the panel actually shows something worth logging
 in for, deliberately read-only (lowest risk, fastest to real value).
 
-- `GET /admin/stats/overview`, `/admin/chats`, `/admin/identities` and
-  their detail views (§`API.md`) — reuses `store/stats.zig`'s existing
-  query logic where it already computes what's needed, extended where it
-  doesn't (e.g. growth-over-time needs a time-bucketed query that likely
-  doesn't exist yet).
-- Frontend: dashboard home (overview tiles), a chats directory + detail
+- ~~`GET /admin/stats/overview`, `/admin/chats`, `/admin/identities` and
+  their detail views~~ Done: new `store/admin_directory.zig` (didn't reuse
+  `store/stats.zig` after all — that module's queries are chat-scoped
+  message-count/top-users, a different shape than the bot-wide
+  overview/directory queries this phase needed; `stats.zig` is untouched).
+- ~~Frontend: dashboard home (overview tiles), a chats directory + detail
   page, a users directory + detail page — all read-only, RBAC-gated to
-  bot admin/owner per `ARCHITECTURE.md` §7.
-- This phase is a good place to pull in the `dataviz` design guidance
-  (already available as a skill) once real chart/stat-tile work starts,
-  rather than improvising chart styling from scratch.
+  bot admin/owner per `ARCHITECTURE.md` §7.~~ Done, including nav-level
+  RBAC (the whole Admin nav category is hidden for non-admins, backend
+  still enforces regardless — hiding is UX only, not the security
+  boundary).
+- **Not done**: growth-over-time / any real chart. The `dataviz` skill
+  guidance was skipped for this pass since everything shipped is plain
+  number tiles and tables, not a chart — worth revisiting once a real
+  time-series view (e.g. messages-per-day) gets built.
+- **Not done**: real pagination UI. `listChats`/`listIdentities` support
+  cursor pagination server-side (`next_cursor` in the response), but the
+  frontend just requests `limit=200` and shows everything in one page —
+  fine for a single bot's realistic scale today, not built out further
+  since nothing has needed it yet (see `useAdminDirectory.ts`).
+- **New this pass, not originally scoped**: `GET /api/v1/auth/session`
+  now returns `roles: {owner, bot_admin}` (§`API.md`), needed to gate
+  everything above. This was explicitly deferred in Phase 1 pending "an
+  RBAC-gated page actually needs it" — this phase is that page.
 
 ## Phase 3 — Module toggles + dynamic config panel
 *Effort: M (was M, now slightly larger — see the provider hot-swap item

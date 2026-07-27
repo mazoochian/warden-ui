@@ -3,6 +3,8 @@
 import { apiFetch } from "@/lib/api";
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 
+export type Roles = { owner: boolean; bot_admin: boolean };
+
 export type Session =
   | { authenticated: false }
   | {
@@ -11,7 +13,13 @@ export type Session =
       display_name: string;
       avatar_url: string | null;
       identity_ids: number[];
+      roles: Roles;
     };
+
+/** Owner or bot admin -- the one check every admin-only page/nav item needs. */
+export function isAdmin(session: Session | undefined): boolean {
+  return !!session?.authenticated && (session.roles.owner || session.roles.bot_admin);
+}
 
 export const sessionQueryKey = ["session"] as const;
 
