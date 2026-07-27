@@ -13,12 +13,12 @@ bot" surface. It is **not** a one-shot. Treat this file as the backlog;
 update phase statuses as they land, same convention warden's own roadmap
 uses.
 
-Status as of 2026-07-27 (overnight session): **Phase 0 done** (on the
-warden repo's `feature/api-server` branch, not merged to master yet —
-see PR #1 there); **Phase 1's shell is done**, its real login wiring
-isn't started yet. See each phase's own status line below, and
-`ARCHITECTURE.md` §11 for the open questions this session left for
-Armin to weigh in on.
+Status as of 2026-07-28: **Phase 0 done** (on the warden repo's
+`feature/api-server` branch, not merged to master yet — see PR #1
+there); **Phase 1's shell is done**, real login wiring starting now.
+`ARCHITECTURE.md` §11's open questions from the overnight session were
+all resolved by Armin on 2026-07-28 — see each phase's own status line
+below for how those decisions land.
 
 ---
 
@@ -97,10 +97,10 @@ account linking, and the session-list UI are all still ahead.*
   method" from an account settings page.
 - Basic app shell: nav, the account menu, session list (`/me/sessions`)
   with per-session revoke, logout.
-- This phase is the natural point to also decide (not just note) the two
-  open questions from `ARCHITECTURE.md` §11 that block later phases:
-  Bot View's exact access tier, and whether "transfer ownership" gets a
-  real flow or stays out of scope entirely for the foreseeable future.
+- The two open questions that used to block later phases (Bot View's
+  access tier, ownership-transfer scope) are now decided — see
+  `ARCHITECTURE.md` §11 — so this phase's own scope is unchanged, just no
+  longer waiting on anything.
 
 ## Phase 2 — Read-only admin dashboard
 *Effort: M. Dependencies: Phase 1.*
@@ -121,7 +121,8 @@ in for, deliberately read-only (lowest risk, fastest to real value).
   rather than improvising chart styling from scratch.
 
 ## Phase 3 — Module toggles + dynamic config panel
-*Effort: M. Dependencies: Phase 0 (feature_flags/dynamic_config tables),
+*Effort: M (was M, now slightly larger — see the provider hot-swap item
+below). Dependencies: Phase 0 (feature_flags/dynamic_config tables),
 Phase 2 (dashboard shell to hang this off of).*
 
 - Wire `feature_flags` reads into every module's dispatch branch in
@@ -133,6 +134,13 @@ Phase 2 (dashboard shell to hang this off of).*
   individually: read `dynamic_config` first, fall back to the existing
   env-sourced `Config` value if no DB row exists yet, so this ships with
   zero behavior change until someone actually flips something.
+- Decided 2026-07-28 (Armin): `WARDEN_LLM_PROVIDER` becomes hot-swappable
+  here too, not just the model — the provider object currently gets
+  constructed once at startup, so this needs a small refactor to
+  re-resolve the active provider per call (or on write) instead of
+  holding a fixed instance. Scoped to this phase since it's the same
+  `dynamic_config` plumbing as everything else above, just one field
+  that needs the extra indirection.
 - Frontend: a modules page (toggle switches, one per feature, with the
   LLM-tool ones visually grouped separately from standalone commands
   since they behave differently under the hood even though the UI

@@ -249,7 +249,7 @@ whole `.env` becomes a text box, each field was triaged:
 | Secrets | `WARDEN_TELEGRAM_BOT_TOKEN`, `WARDEN_MATRIX_ACCESS_TOKEN`, `WARDEN_XMPP_PASSWORD`, `WARDEN_POSTGRES_DSN`, `WARDEN_ANTHROPIC_API_KEY`, `WARDEN_OPENAI_API_KEY`, `WARDEN_MATRIX_PICKLE_KEY` | Shown **masked** (e.g. `sk-...ab12`) for confirmation that *something* is set, never editable from the browser. Changing these still means editing `.env` and restarting, exactly as today. |
 | Identity/ownership | `WARDEN_TELEGRAM_OWNER_ID` and friends | Displayed, not a plain text field — changing "who owns the bot" is dangerous enough to deserve its own explicit, confirmed flow later, not a stray input box (out of scope for the initial build; see `ROADMAP.md`). |
 | Safe behavioral tunables | pool size, acquire/statement timeouts, `WARDEN_WORKERS_PER_PLATFORM`, `WARDEN_RETENTION_MESSAGES`, confirm/convert/menu timeout seconds, `WARDEN_DIGEST_INTERVAL_SECONDS`, `WARDEN_LLM_OWNER_ONLY`, `WARDEN_LLM_SHOW_THINKING`, `WARDEN_LLM_STREAMING`, `WARDEN_LLM_MAX_TOKENS`, `WARDEN_LLM_HISTORY_MESSAGES`, `WARDEN_LLM_SKIP_TRIVIAL_MESSAGES` | Migrated to the new `dynamic_config` table (env var stays as the *fallback default* if no DB row exists, so upgrading doesn't change behavior until someone actually touches it in the UI) — editable live, takes effect on the next read (most of these are already read per-message/per-tick, not cached at startup, so "live" is accurate, not just aspirational). |
-| Provider/model selection | `WARDEN_LLM_PROVIDER`, `WARDEN_ANTHROPIC_MODEL`, `WARDEN_OPENAI_MODEL`, `WARDEN_OPENAI_BASE_URL` | Dynamic (plain strings, no secret material) — swapping models live is safe and useful. Swapping *which provider* live is more involved (the provider object is constructed once at startup today) — tracked as a small refactor in `ROADMAP.md`, not assumed free. |
+| Provider/model selection | `WARDEN_LLM_PROVIDER`, `WARDEN_ANTHROPIC_MODEL`, `WARDEN_OPENAI_MODEL`, `WARDEN_OPENAI_BASE_URL` | Dynamic (plain strings, no secret material) — swapping models live is safe and useful. Swapping *which provider* live is more involved (the provider object is constructed once at startup today). Decided 2026-07-28 (Armin): worth the extra scope — hot-swappable, not restart-only. Phase 3 needs a small refactor so the active provider is re-resolved per-call (or on a `dynamic_config` write) instead of being fixed at process start; see `ROADMAP.md` Phase 3. |
 | Infra endpoints | `WARDEN_SEARXNG_URL`, `WARDEN_WHISPER_URL` | Editable, not masked (not secret), but currently read once at startup — changing them in the UI is honestly labeled "takes effect after restart" until/unless a later pass makes the relevant clients re-read per-call. |
 
 This directly reflects the answer already given: *safe settings live,
@@ -265,10 +265,11 @@ inventing a parallel one:
    `dynamic_config` writes, Bot View sends, account/session admin.
 2. **Bot admin** (`bot_admins` table) — same practical ceiling as owner
    for cross-chat moderation (mirrors `/sudo`'s existing meaning), module
-   toggles and `dynamic_config` included. Whether Bot View access is
-   owner-only or also open to bot admins is called out as an open
-   question in `ROADMAP.md` Phase 6, given how sensitive impersonating
-   the bot's own voice is.
+   toggles and `dynamic_config` included, **except Bot View**: decided
+   2026-07-28 (Armin) to keep Bot View **owner-only**, not
+   bot-admin-inclusive, given how sensitive impersonating the bot's own
+   voice is. Phase 6 should gate the send/subscribe endpoints on owner,
+   not `bot_admins` membership.
 3. **Group admin** — not a new DB role; resolved the same way the bot
    already resolves it, by asking the relevant connector
    (`connector.isGroupAdmin`) at the time of a group-scoped write. A
@@ -353,13 +354,21 @@ indistinguishable from an automated reply.
 ## 11. Open questions / deliberately deferred decisions
 
 Collected here so they're easy to find later, rather than buried in
-whichever phase first bumps into them:
+whichever phase first bumps into them.
 
-- Is Bot View owner-only, or also open to bot admins? (§8)
-- Does changing which LLM *provider* is active need a process restart, or
-  is it worth the refactor to make that hot-swappable too? (§6)
-- Should "transfer bot ownership" get a real guided flow, or stay
-  `.env`-and-restart indefinitely? (§6)
+**Resolved 2026-07-28 (Armin):**
+
+- Bot View is **owner-only**, not bot-admin-inclusive (§7, §8).
+- LLM *provider* selection (not just model) **should be made
+  hot-swappable**, not left restart-only — extra Phase 3 scope, worth it
+  (§6).
+- "Transfer bot ownership" **stays `.env`-and-restart indefinitely** — no
+  guided UI flow planned (§6).
+- warden-ui's GitHub repo is **public**, matching warden itself.
+- `WARDEN_API_PORT=8081` confirmed with no conflict on the VPS.
+
+**Still open:**
+
 - Per-chat (not just bot-wide) module toggles — worth adding later? (§5)
 - Real JWKS/RS256 ID-token verification as a hardening pass once the
   "trust the token-endpoint TLS channel" simplification (§3.1) needs
