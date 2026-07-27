@@ -151,10 +151,12 @@ in for, deliberately read-only (lowest risk, fastest to real value).
   RBAC-gated page actually needs it" — this phase is that page.
 
 ## Phase 3 — Module toggles + dynamic config panel
-*Effort: M (was M, now slightly larger — see the provider hot-swap item
-below). Dependencies: Phase 0 (feature_flags/dynamic_config tables),
-Phase 2 (dashboard shell to hang this off of). Status (2026-07-28): done
-except the provider hot-swap refactor.*
+*Effort: M (was M, ended up slightly larger — see the provider hot-swap
+item below). Dependencies: Phase 0 (feature_flags/dynamic_config tables),
+Phase 2 (dashboard shell to hang this off of). Status (2026-07-28):
+**done** — every item below shipped, verified against a real DB
+end-to-end (413→422 tests across the phase's commits, 0 leaks, only the
+two known pre-existing flakes ever seen).*
 
 - ~~Wire `feature_flags` reads into every module's dispatch branch in
   `main.zig` (standalone commands) and into `tools/registry.zig`'s list
@@ -174,15 +176,23 @@ except the provider hot-swap refactor.*
   rather than wired live, since that needs those structures reworked,
   not just a DB read. New `GET`/`PATCH /api/v1/admin/config` (masked
   secrets read live from `Config`, never touching `dynamic_config`).
-- Decided 2026-07-28 (Armin): `WARDEN_LLM_PROVIDER` becomes hot-swappable
-  here too, not just the model — the provider object currently gets
-  constructed once at startup, so this needs a small refactor to
-  re-resolve the active provider per call (or on write) instead of
-  holding a fixed instance. Scoped to this phase since it's the same
-  `dynamic_config` plumbing as everything else above, just one field
-  that needs the extra indirection. **Not started** — the one item left
-  in this phase, deliberately saved for last since it's the riskiest
-  (touches the core LLM call path).
+- ~~Decided 2026-07-28 (Armin): `WARDEN_LLM_PROVIDER` becomes
+  hot-swappable here too, not just the model~~ Done (2026-07-28,
+  deliberately saved for last as the riskiest item — touches the core LLM
+  call path). Turned out to need more than "re-resolve per call": `Config`
+  only ever loaded the *selected* provider's env vars, so the other one's
+  credentials never existed to swap to at all — `config.zig` now loads
+  both independently (same error semantics as before when only one is
+  configured). New `llm/dynamic_provider.zig` wraps both behind one
+  `llm.Provider`, re-checking `dynamic_config` per call, falling back to
+  whichever is actually configured if the requested one isn't. See
+  `ARCHITECTURE.md` §6's "Provider selection" row for the full picture —
+  and its new adjacent "Model selection" row for a correction found along
+  the way: model selection (`WARDEN_ANTHROPIC_MODEL`/`WARDEN_OPENAI_MODEL`)
+  is *not* actually live either, despite this file's original wording
+  implying it was — deliberately not fixed in this pass, since doing so
+  touches the actual request-building code in `llm/anthropic.zig`/
+  `llm/openai_compat.zig`, not just `main.zig`/a new wrapper file.
 - ~~Frontend: a modules page (toggle switches...) and a config page
   (grouped by category, secrets rendered masked and non-interactive)~~
   Done — `/admin/modules` (Commands vs. LLM tools grouping),
