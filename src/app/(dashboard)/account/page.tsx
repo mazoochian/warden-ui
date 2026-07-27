@@ -2,9 +2,9 @@
 
 import { useInvalidateSession } from "@/hooks/useSession";
 import { SessionListItem, useRevokeSession, useSessions } from "@/hooks/useSessions";
+import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
 import {
   Badge,
-  Body1,
   Button,
   Spinner,
   Table,
@@ -14,21 +14,10 @@ import {
   TableHeader,
   TableHeaderCell,
   TableRow,
-  Title2,
-  makeStyles,
   tokens,
 } from "@fluentui/react-components";
 import { DesktopRegular, DismissRegular } from "@fluentui/react-icons";
 import { useRouter } from "next/navigation";
-
-const useStyles = makeStyles({
-  root: {
-    display: "flex",
-    flexDirection: "column",
-    gap: tokens.spacingVerticalM,
-    maxWidth: "800px",
-  },
-});
 
 function formatTimestamp(seconds: number) {
   return new Date(seconds * 1000).toLocaleString();
@@ -78,35 +67,37 @@ function SessionRow({ session }: { session: SessionListItem }) {
 }
 
 export default function AccountPage() {
-  const styles = useStyles();
+  const s = useCommonStyles();
   const { data, isPending, isError } = useSessions();
 
   return (
-    <div className={styles.root}>
-      <Title2>Account &amp; Sessions</Title2>
-      <Body1>
-        Every browser currently signed in to your account. Revoking a session ends it immediately, wherever it is.
-      </Body1>
+    <div className={s.page}>
+      <PageHeader
+        title="Account & Sessions"
+        description="Every browser currently signed in to your account. Revoking a session ends it immediately, wherever it is."
+      />
 
       {isPending && <Spinner label="Loading sessions..." />}
-      {isError && <Body1>Failed to load sessions.</Body1>}
+      {isError && <Section title="Sessions">Failed to load sessions.</Section>}
 
       {data && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHeaderCell>Device</TableHeaderCell>
-              <TableHeaderCell>Signed in</TableHeaderCell>
-              <TableHeaderCell>Expires</TableHeaderCell>
-              <TableHeaderCell></TableHeaderCell>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.items.map((session) => (
-              <SessionRow key={session.id} session={session} />
-            ))}
-          </TableBody>
-        </Table>
+        <Section title={`${data.items.length} active session${data.items.length === 1 ? "" : "s"}`}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHeaderCell>Device</TableHeaderCell>
+                <TableHeaderCell>Signed in</TableHeaderCell>
+                <TableHeaderCell>Expires</TableHeaderCell>
+                <TableHeaderCell></TableHeaderCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.items.map((session) => (
+                <SessionRow key={session.id} session={session} />
+              ))}
+            </TableBody>
+          </Table>
+        </Section>
       )}
     </div>
   );

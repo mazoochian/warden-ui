@@ -62,3 +62,11 @@ export function useRecentChanges(actions: string[], limit = 5) {
     },
   });
 }
+
+/** Unfiltered recent audit log, for the dashboard's "recent panel activity". */
+export function useRecentAuditLog(limit = 5) {
+  return useQuery({
+    queryKey: ["admin", "audit-log", "recent-all", limit],
+    queryFn: () => apiFetch<{ items: AuditLogEntry[] }>(`/api/v1/admin/audit-log?limit=${limit}`),
+  });
+}

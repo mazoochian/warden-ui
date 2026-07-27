@@ -1,26 +1,9 @@
 "use client";
 
 import { MySettings, useMySettings, useSetMySettings } from "@/hooks/useMySettings";
-import { Body1, Button, Field, Input, Spinner, Title2, makeStyles, tokens } from "@fluentui/react-components";
+import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { Button, Field, Input, Spinner } from "@fluentui/react-components";
 import { useState } from "react";
-
-const useStyles = makeStyles({
-  root: {
-    display: "flex",
-    flexDirection: "column",
-    gap: tokens.spacingVerticalL,
-    maxWidth: "500px",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: tokens.spacingVerticalM,
-  },
-  choices: {
-    display: "flex",
-    gap: tokens.spacingHorizontalS,
-  },
-});
 
 const dateFormats: { value: MySettings["date_format"]; label: string }[] = [
   { value: "mdy", label: "M/D/Y" },
@@ -54,7 +37,7 @@ function parseOffset(text: string): number | null {
 /** Seeds its editable state directly from `initial` (no effect needed --
  * mounted fresh, via `key`, whenever the loaded data actually changes). */
 function SettingsForm({ initial }: { initial: MySettings }) {
-  const styles = useStyles();
+  const s = useCommonStyles();
   const setSettings = useSetMySettings();
 
   const [offsetText, setOffsetText] = useState(formatOffset(initial.utc_offset_minutes));
@@ -70,7 +53,7 @@ function SettingsForm({ initial }: { initial: MySettings }) {
   };
 
   return (
-    <div className={styles.form}>
+    <Section title="Timezone & formatting">
       <Field
         label="UTC offset"
         hint="Signed hours[:minutes], e.g. +3:30, -5, +0."
@@ -81,7 +64,7 @@ function SettingsForm({ initial }: { initial: MySettings }) {
       </Field>
 
       <Field label="Date format">
-        <div className={styles.choices}>
+        <div className={s.row}>
           {dateFormats.map((f) => (
             <Button
               key={f.value}
@@ -95,7 +78,7 @@ function SettingsForm({ initial }: { initial: MySettings }) {
       </Field>
 
       <Field label="Time format">
-        <div className={styles.choices}>
+        <div className={s.row}>
           {timeFormats.map((f) => (
             <Button
               key={f.value}
@@ -116,24 +99,23 @@ function SettingsForm({ initial }: { initial: MySettings }) {
       >
         Save
       </Button>
-    </div>
+    </Section>
   );
 }
 
 export default function SettingsPage() {
-  const styles = useStyles();
+  const s = useCommonStyles();
   const { data, isPending, isError } = useMySettings();
 
   return (
-    <div className={styles.root}>
-      <Title2>Personal Settings</Title2>
-      <Body1>
-        Your reminder timezone (a fixed UTC offset -- see ARCHITECTURE.md for why not a real IANA zone) and how dates
-        get formatted when Warden shows them to you.
-      </Body1>
+    <div className={s.page}>
+      <PageHeader
+        title="Personal Settings"
+        description="Your reminder timezone (a fixed UTC offset -- see ARCHITECTURE.md for why not a real IANA zone) and how dates get formatted when Warden shows them to you."
+      />
 
       {isPending && <Spinner label="Loading settings..." />}
-      {isError && <Body1>Failed to load settings.</Body1>}
+      {isError && <Section title="Settings">Failed to load settings.</Section>}
       {data && <SettingsForm key={JSON.stringify(data)} initial={data} />}
     </div>
   );

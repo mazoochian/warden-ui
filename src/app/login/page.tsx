@@ -8,16 +8,17 @@ import {
   Body1,
   Button,
   Card,
-  CardHeader,
   Caption1,
+  Divider,
   MessageBar,
   MessageBarBody,
   Spinner,
-  Title1,
+  Title2,
   makeStyles,
+  shorthands,
   tokens,
 } from "@fluentui/react-components";
-import { GlobeRegular, PersonRegular } from "@fluentui/react-icons";
+import { GlobeRegular, PersonRegular, ShieldTask24Filled } from "@fluentui/react-icons";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
@@ -25,25 +26,33 @@ import { useCallback, useEffect } from "react";
 const useStyles = makeStyles({
   page: {
     minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: tokens.spacingVerticalXXL,
+    display: "grid",
+    placeItems: "center",
+    backgroundColor: tokens.colorNeutralBackground3,
+    ...shorthands.padding("24px"),
   },
   card: {
-    width: "360px",
-    padding: tokens.spacingVerticalXL,
+    width: "100%",
+    maxWidth: "380px",
+    ...shorthands.padding("28px"),
     display: "flex",
     flexDirection: "column",
-    gap: tokens.spacingVerticalM,
+    gap: "18px",
+    boxShadow: tokens.shadow16,
   },
-  buttons: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    gap: tokens.spacingVerticalS,
-    marginTop: tokens.spacingVerticalM,
+  brand: { display: "flex", alignItems: "center", gap: "10px" },
+  mark: {
+    width: "36px",
+    height: "36px",
+    display: "grid",
+    placeItems: "center",
+    backgroundColor: tokens.colorBrandBackground,
+    color: tokens.colorNeutralForegroundOnBrand,
+    borderRadius: tokens.borderRadiusSmall,
+    flexShrink: 0,
   },
+  muted: { color: tokens.colorNeutralForeground3 },
+  stack: { display: "flex", flexDirection: "column", gap: "8px" },
 });
 
 export default function LoginPage() {
@@ -69,15 +78,22 @@ export default function LoginPage() {
     },
   });
 
-  const handleTelegramAuth = useCallback(
-    (user: TelegramAuthUser) => telegramLogin.mutate(user),
-    [telegramLogin],
-  );
+  const handleTelegramAuth = useCallback((user: TelegramAuthUser) => telegramLogin.mutate(user), [telegramLogin]);
 
   return (
     <div className={styles.page}>
       <Card className={styles.card}>
-        <CardHeader header={<Title1>warden</Title1>} description="Sign in to the control panel" />
+        <div className={styles.brand}>
+          <div className={styles.mark}>
+            <ShieldTask24Filled />
+          </div>
+          <div>
+            <Title2 as="h1" block>
+              Warden
+            </Title2>
+            <Caption1 className={styles.muted}>Sign in to the control panel.</Caption1>
+          </div>
+        </div>
 
         {telegramLogin.isError && (
           <MessageBar intent="error">
@@ -85,31 +101,35 @@ export default function LoginPage() {
           </MessageBar>
         )}
 
-        <div className={styles.buttons}>
+        <div className={styles.stack}>
           {providersLoading && <Spinner size="tiny" label="Loading sign-in options..." />}
 
           {!providersLoading && providers?.telegram && (
             <TelegramLoginButton botUsername={providers.telegram.bot_username} onAuth={handleTelegramAuth} />
           )}
           {!providersLoading && !providers?.telegram && (
-            <Body1>
-              Telegram sign-in isn&apos;t configured on this deployment yet (
-              <code>WARDEN_TELEGRAM_BOT_USERNAME</code> unset).
+            <Body1 className={styles.muted}>
+              Telegram sign-in isn&apos;t configured on this deployment yet (<code>WARDEN_TELEGRAM_BOT_USERNAME</code>{" "}
+              unset).
             </Body1>
           )}
-
-          <Button appearance="secondary" icon={<PersonRegular />} disabled>
-            Continue with Google
-          </Button>
-          <Button appearance="secondary" icon={<GlobeRegular />} disabled>
-            Continue with SSO
-          </Button>
+          <Caption1 className={styles.muted}>
+            Uses Telegram&apos;s official login widget and resolves straight to your existing bot identity, if you
+            have one. Warden never asks for a password.
+          </Caption1>
         </div>
 
-        <Caption1>
-          Telegram Login resolves straight to your existing bot identity, if you have one. Google/SSO aren&apos;t
-          wired up yet.
-        </Caption1>
+        <Divider>or</Divider>
+
+        <div className={styles.stack}>
+          <Button disabled icon={<PersonRegular />}>
+            Continue with Google
+          </Button>
+          <Button disabled icon={<GlobeRegular />}>
+            Continue with SSO
+          </Button>
+          <Caption1 className={styles.muted}>Google and SSO aren&apos;t configured on this deployment yet.</Caption1>
+        </div>
       </Card>
     </div>
   );
