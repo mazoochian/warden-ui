@@ -15,7 +15,9 @@ uses.
 
 Status as of 2026-07-28: **Phase 0 done** (on the warden repo's
 `feature/api-server` branch, not merged to master yet — see PR #1
-there); **Phase 1's shell is done**, real login wiring starting now.
+there); **Phase 1's shell is done and Telegram Login is done
+end-to-end** (needs one external `@BotFather` step from Armin before
+it'll actually authenticate anyone — see Phase 1's own status line).
 `ARCHITECTURE.md` §11's open questions from the overnight session were
 all resolved by Armin on 2026-07-28 — see each phase's own status line
 below for how those decisions land.
@@ -71,8 +73,10 @@ user-visible ships yet.
 
 ## Phase 1 — Real login + frontend shell
 *Effort: L. Dependencies: Phase 0. Status: shell done (2026-07-27, on
-master), real login wiring not started. The three login methods below,
-account linking, and the session-list UI are all still ahead.*
+master); Telegram Login done end-to-end (2026-07-28, backend on
+`feature/api-server`, frontend on master) except one external step (see
+below). Google/OIDC login, account linking, and the session-list UI are
+still ahead.*
 
 - ~~warden-ui repo gets its actual scaffolding~~ Done: Next.js (App
   Router) + TypeScript + `@fluentui/react-components`, `FluentProvider`
@@ -82,11 +86,17 @@ account linking, and the session-list UI are all still ahead.*
   a real page today (most render a `PlaceholderPage` naming which phase
   builds them); the nav nesting (Modules/Admin categories) matches this
   roadmap's own module list.
-- Telegram Login Widget (HMAC verification server-side, per
-  `ARCHITECTURE.md` §3.1) — the recommended *first* login method to wire
-  up, since it needs no external provider registration/config and
-  resolves directly to a bot identity that already exists for most
-  admins.
+- ~~Telegram Login Widget~~ Done (2026-07-28): `src/api/telegram_login.zig`
+  (HMAC verification, full test coverage), `GET /api/v1/auth/providers` +
+  `POST /api/v1/auth/telegram/callback` in `router.zig`, and a real
+  `TelegramLoginButton` component wired into the login page. **Correction
+  to this line's original wording**: it turns out this method *does* need
+  one external, one-time setup step after all — Telegram requires the
+  bot's serving domain to be registered via `@BotFather`'s `/setdomain`
+  command before the widget will actually authenticate anyone (it renders
+  fine either way, just silently refuses to call back without this). Not
+  code-blocking, but needs Armin to do it against the real deployed
+  domain once one exists — flagged, not done here.
 - Google OAuth2 code-flow login (needs a Google Cloud OAuth client
   registered — an external setup step, not just code).
 - Generic OIDC login against an admin-configured `oauth_providers` row
