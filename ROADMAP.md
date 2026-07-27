@@ -293,15 +293,32 @@ Dependencies: Phase 4.*
   model (Groups has the same limit), not new to this phase — a real
   "chats I'm a member of" listing endpoint would need its own phase.
 
-### 5b — Group Administration actions
-- Kick/ban/mute/unmute/pin/unpin/promote/demote/redact endpoints, each
-  routed through the *exact* existing `auth.checkGroupAdminAccess`/
-  `isOwnerOrSudoBotAdmin` functions — no reimplementation of the
-  permission ladder in API-land.
-- Frontend: a moderation panel per chat — target picker (search chat
-  members), action buttons, no extra confirmation step for kick/ban
-  (matches the existing "immediate like the command" convention), redact
-  gets its four modes as a small form.
+### 5b — Group Administration actions — done (2026-07-27)
+- `POST /api/v1/chats/:id/actions/{kick,ban,mute,unmute,promote,demote,pin,
+  unpin,redact}`, each routed through the *exact* existing
+  `auth.checkGroupAdminAccess`/`isOwnerOrSudoBotAdmin` functions — no
+  reimplementation of the permission ladder in API-land. `sudo_active` maps
+  to plain bot-admin status (no `/sudo` text-prefix ritual in a web form;
+  still sends the real "granted superuser permissions" chat message, so
+  it's never silent) and the token-spend tier is never offered (API.md's
+  own ladder only lists three tiers). `promote`/`demote` stay owner-only,
+  matching `group_admin.promote`'s existing doc comment.
+- Frontend: a moderation panel per chat — member table with inline action
+  buttons, no extra confirmation step for kick/ban (matches the existing
+  "immediate like the command" convention), redact gets its four modes as
+  a small form.
+- Caught and fixed a real crash during local smoke testing: every new
+  handler read the request body before resolving auth, but cookie-reading
+  needs the reader still in its pre-body state — an assertion failure, not
+  just a wrong response. Also retrofitted Phase 5a: `reminders`/`alerts`/
+  `watches` creation wasn't gated on its own module toggle like every
+  slash-command equivalent is; fixed, list/cancel stay ungated (matches
+  `/unwatch`'s "removal always allowed" precedent).
+- Known gap, not fixed here: `pin` has no message-browser UI, just a typed-
+  in native message id — the only place a chat's recent messages are
+  exposed today (`GET /api/v1/admin/chats/:id`) is owner/bot-admin-only,
+  while pin itself is open to any live platform admin too, so wiring it up
+  would under-scope who can use it. Follow-up work, not a blocker.
 
 ### 5c — Convert
 - `POST /convert` multipart upload + synchronous conversion response.
