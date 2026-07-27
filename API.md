@@ -36,7 +36,7 @@ pages requires a valid session cookie; requests without one get `401`.
 | `GET /api/v1/auth/oidc/:providerId/start` / `.../callback` | Same shape as Google, generic over any enabled `oauth_providers` row. |
 | `POST /api/v1/auth/link/:method/start` | Requires an existing session. Same redirect dance as above, but on success adds an `account_identities` row to the *current* account instead of creating a new one. |
 | `POST /api/v1/auth/logout` | Revokes the current `web_sessions` row, clears the cookie. |
-| `GET /api/v1/auth/session` | **Implemented (2026-07-28).** `{authenticated: false}`, or `{authenticated: true, account_id, display_name, avatar_url, identity_ids: [...]}`. `roles` isn't in the response yet — deferred until an RBAC-gated page actually needs it (likely Phase 2); `identity_ids` is bare ids, not full identity objects, until something needs more. The frontend's one call on every page load to know what to render. |
+| `GET /api/v1/auth/session` | **Implemented (2026-07-28).** `{authenticated: false}`, or `{authenticated: true, account_id, display_name, avatar_url, identity_ids: [...], roles: {owner, bot_admin}}`. `roles` landed with Phase 2 (the first page that needed it) — `admin_of_chats` (per-chat live-admin status) still isn't included, deferred to Phase 4 which is the first thing that needs it. `identity_ids` is bare ids, not full identity objects, until something needs more. The frontend's one call on every page load to know what to render. |
 
 ## Account
 
@@ -64,11 +64,11 @@ pages requires a valid session cookie; requests without one get `401`.
 
 | Method & path | Purpose |
 |---|---|
-| `GET /api/v1/admin/stats/overview` | `{total_messages, total_chats, total_identities, messages_last_24h, messages_last_7d, active_chats_last_7d}` — reuses `store/stats.zig`'s existing queries where they already exist. |
-| `GET /api/v1/admin/chats` | Paginated chat directory: `{id, platform, title, member_count, message_count, digest_enabled}`. |
-| `GET /api/v1/admin/chats/:id` | One chat's detail: settings, members, recent activity. |
-| `GET /api/v1/admin/identities` | Paginated user directory: `{id, platform, display_name, username, is_bot_admin, is_allowed, credits, last_seen}`. |
-| `GET /api/v1/admin/identities/:id` | One identity's detail. |
+| `GET /api/v1/admin/stats/overview` | **Implemented (2026-07-28).** `{total_messages, total_chats, total_identities, messages_last_24h, messages_last_7d, active_chats_last_7d}` — new `store/admin_directory.zig` (bot-wide queries; `store/stats.zig` stayed chat-scoped, untouched). Requires owner/bot_admin (`401`/`403`). |
+| `GET /api/v1/admin/chats` | **Implemented (2026-07-28).** Paginated (`?cursor=&limit=`) chat directory: `{items: [{id, platform, native_chat_id, title, member_count, message_count, digest_enabled}], next_cursor}`. |
+| `GET /api/v1/admin/chats/:id` | **Implemented (2026-07-28).** One chat's detail: settings (`chat_type`, `digest_enabled`, `magic_word`), member/message counts, last 10 messages (`recent_messages`, newest first). |
+| `GET /api/v1/admin/identities` | **Implemented (2026-07-28).** Paginated user directory (bots excluded): `{items: [{id, platform, display_name, username, is_bot_admin, is_allowed, credits, last_seen}], next_cursor}`. |
+| `GET /api/v1/admin/identities/:id` | **Implemented (2026-07-28).** Adds `native_id` to the summary shape above. |
 | `POST /api/v1/admin/bot-admins` / `DELETE .../:identityId` | Grant/revoke bot admin — same authorization + effect as `/addadmin`/`/removeadmin`. |
 | `POST /api/v1/admin/allowlist/users` / `DELETE .../:identityId` | Same as `/adduser`/`/removeuser`. |
 | `POST /api/v1/admin/allowlist/chats` / `DELETE .../:chatId` | Same as `/allowchat`/`/disallowchat`. |
