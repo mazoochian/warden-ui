@@ -337,56 +337,122 @@ Dependencies: Phase 4.*
   didn't need porting, as planned — a file picker plus a format dropdown
   already is the non-interactive one-shot shape.
 
-**Phase 5 complete.** Next: Phase 6 (Bot View) or Phase 7 (Hardening &
-polish) — see each phase's own notes for what's still open before
-starting.
+**Phase 5 complete.** Next: Phase 7 (Hardening & polish) — see that
+phase's own notes for what's still open before starting.
 
-## Phase 6 — Bot View
+## Phase 6 — Bot View — done (2026-07-28)
 *Effort: L. Dependencies: Phase 0 (WebSocket infra), Phase 5b (chat
 member/target lookups reused for "who am I sending to").*
 
-- The in-memory pub/sub broadcaster tap on message recording, the
-  per-chat WebSocket subscription endpoint, and the "send as bot"
-  endpoint — see `ARCHITECTURE.md` §8 in full, since this is the most
-  sensitive surface in the project and shouldn't be built casually.
-- Resolve the two things `ARCHITECTURE.md` explicitly left open before
-  writing a line of this phase's code: exact access tier (owner-only vs.
-  bot-admin-inclusive), and whether every send needs an explicit
-  confirmation step in the UI (recommended: yes, always, no "don't ask
-  again" option — this is the one place in the whole panel where that
-  friction is a feature).
-- Frontend: a chat picker, a live message pane (incoming messages
-  streaming in via the WS hook), a compose box for sending as the bot,
-  visually distinguished (a persistent banner, not just a subtle color
-  difference) from anything that looks like the admin's *own* identity
-  speaking.
+- New `src/api/bot_view.zig`: an in-memory `Broadcaster` (chat_id ->
+  subscriber list, `Io.Mutex`+`Io.Condition`-guarded), fed by a read-only
+  tap in `main.zig` right next to the existing `recordMessage` call for
+  incoming (not choice-picked) messages — never influences whether/how a
+  message gets answered. Scoped to *incoming* messages only, matching the
+  "Live incoming view" naming literally; the bot's own automated replies
+  don't re-appear in the pane (an accepted v1 limitation, not an oversight
+  — see the module's doc comment).
+- `GET /api/v1/bot-view/ws?chat_id=` — native `std.http.Server` WebSocket
+  upgrade (confirmed present in this Zig toolchain). Per connection: the
+  request's own worker thread becomes the "reader" (blocks on
+  `readSmallMessage` purely to detect close), a second spawned thread is
+  the "writer" (blocks on the subscriber's own `Io.Condition`, forwarding
+  each published event as a JSON text frame) — deliberately real
+  `std.Thread`s, not `Io.Group.async`/`Io.concurrent` (this codebase
+  already moved off those for exactly this kind of long-lived
+  per-connection work, see `worker_pool.zig`'s doc). Found and fixed a
+  real bug while writing the integration test: `respondWebSocket` never
+  flushes its own response, so without an explicit `ws.output.flush()`
+  right after it, a client's handshake would hang until the chat's first
+  published message instead of completing immediately.
+- `POST /api/v1/bot-view/send` — `{chat_id, text}`, calls
+  `connector.sendMessage` directly (no parallel send path), audit-logged
+  as `bot_view.send` with the text as `detail_json`.
+- Both endpoints resolved **owner-only**, not bot-admin-inclusive — the
+  access-tier question `ARCHITECTURE.md` §7 had already resolved
+  (2026-07-28) before this phase started. Confirmation is **always
+  required** in the UI, no "don't ask again" option, per the same
+  decision.
+- Chat picker reuses the existing `GET /api/v1/chats?mine=true` rather
+  than a new `/bot-view/chats` endpoint — owner already sees every chat
+  there, which is exactly Bot View's own visibility rule; no gap.
+- Frontend: chat picker, a live message pane (`useBotViewFeed`'s
+  WebSocket hook, fixed 3s reconnect on drop, no replay), and a compose
+  box with a persistent warning banner plus a confirmation dialog
+  (showing the exact text and destination chat) gating every send — not
+  just a color difference. The page itself also gates on
+  `session.roles.owner` specifically (stricter than the sidebar's own
+  admin-item grouping, which still shows the nav entry to bot admins too
+  — the backend is the real boundary either way).
+- Backend: `zig build` + `zig build test` both green, including a real
+  end-to-end WebSocket test in `server.zig` — a raw TCP client doing its
+  own RFC 6455 handshake (`std.http.Client` has no WS support) against
+  the real accept loop, verifying both the owner-only gate and that a
+  server-side `publish` actually arrives as a text frame.
 
 ## Phase 7 — Hardening & polish
 *Effort: M. Dependencies: everything above exists to harden.*
 
-- Full audit log browsing UI (filter by action/account/date) on top of
-  the `audit_log` table every prior phase has already been writing to.
-- Rate limiting on the API layer (especially auth endpoints and Bot
-  View's send endpoint).
-- CSRF protection review for every state-changing endpoint (same-origin
-  deployment per `ARCHITECTURE.md` §2 removes a lot of the usual risk,
-  but double-submit-cookie or a custom header check is still cheap
-  insurance).
-- Optional but flagged explicitly: real JWKS/RS256 ID-token signature
-  verification for OIDC logins, replacing the "trust the token endpoint's
-  TLS channel" simplification from `ARCHITECTURE.md` §3.1 — needs a
-  hand-rolled RSA-PKCS1v1.5 verify (`std.crypto` has no RSA), so budget
-  real time for this one specifically if it's ever prioritized.
+- **Done (2026-07-28):** Full audit log browsing UI (`/admin/audit-log`)
+  on top of the `audit_log` table every prior phase has already been
+  writing to — action filter (server-side, exact match), account column,
+  target/detail columns, cursor-based next/previous paging. No date-range
+  filter (`audit_log.list` has no range query today, only `action` +
+  cursor pagination) — client-visible "When" column covers browsing by
+  eye at this project's scale; a real range filter is follow-up work if
+  ever needed.
+- **Done (2026-07-28):** Rate limiting on the API layer. New
+  `src/api/rate_limit.zig` — a plain fixed-window counter per key (not
+  sliding-window/token-bucket; some burstiness at a window boundary is an
+  accepted tradeoff for "stop naive flooding," not "precise quota
+  enforcement"). Applied to `POST /api/v1/auth/dev-login`,
+  `GET /api/v1/auth/oidc/:id/{start,callback}` (20/min, keyed by a fixed
+  per-endpoint string — no per-IP key yet, see below), and
+  `POST /api/v1/bot-view/send` (10/min, keyed per-account — the
+  precise, high-value one, since that endpoint is already authenticated).
+  **Known gap, flagged not silently skipped:** true per-client-IP limiting
+  needs the peer address plumbed from `server.zig`'s accept loop through
+  every handler signature, which isn't done — the anonymous auth-flow
+  endpoints are limited *globally per endpoint*, not per caller, until
+  that plumbing exists (or until Traefik's own IP-based rate limiting is
+  configured at the proxy layer instead, which may be the better fix
+  given it's already sitting in front in production).
+- **Reviewed, no change needed (2026-07-28):** CSRF. Every session cookie
+  (`web_sessions`'s cookie, the OIDC PKCE flow cookie) is already
+  `HttpOnly; Secure; SameSite=Lax` — under `SameSite=Lax`, a cross-site
+  page's own `fetch`/`XHR`/form POST to warden's API does not carry the
+  cookie at all in any current browser, which already defeats the
+  standard CSRF attack shape for every state-changing endpoint (all of
+  which are POST/PATCH/DELETE — confirmed no GET route performs a
+  mutation). A double-submit-cookie/custom-header scheme would be
+  redundant defense-in-depth for real implementation cost (threading a
+  token through every mutating frontend call) given `SameSite=Lax`
+  already covers the realistic threat model for a same-origin deployment
+  — deliberately not added.
+- **Done (2026-07-28):** Production observability for the new API
+  surface — one line per request (`method path outcome elapsed_ms`)
+  through the same `src/log.zig` tabular logger every other subsystem
+  uses, added to `server.zig`'s `handleConnection`. Individual handlers'
+  own `log.err`/`log.warn` calls (already scattered through `router.zig`)
+  stay as the *why* on failure; this is just the *that a request
+  happened at all* line, which didn't exist at any level before.
+- **Adjusted, not re-attempted:** the RS256/JWKS item below was written
+  before Phase 3's OIDC work landed and assumed RS256 specifically —
+  `oidc.zig` already does real JWKS-based signature verification, just
+  over ES256 (the objectively correct call given `std.crypto` has no RSA
+  at all, not a shortcut) with the signing provider (Telegram) switched
+  to ES256 via BotFather. Real RS256 support would still need a
+  hand-rolled RSA-PKCS1v1.5 verify if a *future* provider requires it
+  specifically; not needed for anything in production today.
 - Accessibility pass (Fluent UI React is decent out of the box here, but
   don't assume it for free — verify keyboard nav and screen-reader
   labeling on every custom composite component, e.g. the reminder
-  date/time picker and Bot View's compose box).
+  date/time picker and Bot View's compose box). **Not done this pass** —
+  flagged, not silently dropped.
 - i18n/RTL groundwork (`ARCHITECTURE.md` §9) — at minimum, structure
   strings for extraction even if Persian translation itself isn't done
-  yet.
-- Production observability for the new API surface: request logging
-  through the same `src/log.zig` tabular logger the bot already uses,
-  not a second logging convention.
+  yet. **Not done this pass** — flagged, not silently dropped; still not
+  a blocker per `ARCHITECTURE.md` §9's own framing.
 
 ---
 
