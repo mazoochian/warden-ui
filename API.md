@@ -113,9 +113,13 @@ admin act beyond their own messages).
 
 | Method & path | Purpose |
 |---|---|
-| `GET /api/v1/bot-view/chats` | Chats available to view (same visibility rule as group settings). |
-| `WS /api/v1/bot-view/ws?chat_id=` | Subscribes to a live feed of every message `main.zig` records for that chat, from the moment of connection onward (no history replay in the first cut — `GET` a chat's recent `messages` rows separately to backfill the pane on open). |
-| `POST /api/v1/bot-view/chats/:id/send` | `{text}` — calls `connector.sendMessage` for that chat's platform, exactly as any other reply. Confirmation-gated client-side given what this does; every send is audit-logged server-side regardless. |
+**Implemented (2026-07-28), owner-only** — not extended to bot admins even though most other admin actions are (`ARCHITECTURE.md` §7).
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/chats?mine=true` | Chat picker — reused as-is rather than a separate `/bot-view/chats` endpoint (owner already sees every chat there, which is exactly Bot View's own visibility rule). |
+| `GET /api/v1/bot-view/ws?chat_id=` | WebSocket upgrade. Subscribes to a live feed of every message `main.zig` records for that chat (via the same read-only tap next to `recordMessage`), from the moment of connection onward — no history replay (`GET` a chat's recent `messages` rows separately to backfill the pane on open). |
+| `POST /api/v1/bot-view/send` | `{chat_id, text}` — calls `connector.sendMessage` for that chat's platform, exactly as any other reply; no parallel send path. Confirmation-gated client-side given what this does; every send is audit-logged server-side (`bot_view.send`) regardless. |
 
 ## What's deliberately not an endpoint (at least at first)
 
