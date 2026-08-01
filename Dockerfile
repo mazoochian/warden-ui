@@ -14,7 +14,11 @@ COPY . .
 # WARDEN_API_ORIGIN must NOT be set here -- same-origin-in-production is
 # the whole point (see next.config.ts's doc comment / ARCHITECTURE.md §2),
 # and baking a build-time origin in would defeat that.
-RUN npm run build
+# --webpack: Next 16 defaults `next build` to Turbopack, which has no
+# native binary for musl (this image's libc) and only loads WASM bindings
+# it then refuses to build with -- confirmed failing outright on
+# node:22-alpine. Webpack has no such platform restriction.
+RUN npm run build -- --webpack
 
 # ---------------------------------------------------------------------------
 # Final image: just the standalone server + static assets, no source, no
