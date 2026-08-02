@@ -589,10 +589,27 @@ member/target lookups reused for "who am I sending to").*
     picked in code (`*.countOne`/`*.countOther`,
     `*.sessionCountOne`/`*.sessionCountOther`) rather than real plural
     rules, consistent with this module's "no ICU, not at this scale"
-    stance. **Still not converted:** every admin page (Chats/Identities/
-    Modules/Config/Audit Log) and Bot View — genuinely out of scope for
-    this pass, not attempted. RTL itself remains fully unaddressed, same
-    as above. Verified: `npm run lint` and `npm run build` both clean.
+    stance. Verified: `npm run lint` and `npm run build` both clean.
+  - **Follow-up (2026-08-02), same day, closing the list out:** converted
+    every remaining admin page — Chats (`admin/chats/page.tsx` +
+    `admin/chats/[id]/page.tsx`), Users (`admin/identities/page.tsx` +
+    `admin/identities/[id]/page.tsx`), Modules (`admin/modules/page.tsx`),
+    Config (`admin/config/page.tsx`), Audit Log
+    (`admin/audit-log/page.tsx`) — and Bot View (`bot-view/page.tsx`).
+    Same mechanical `t("page.key")` substitution as every prior pass, new
+    `adminChats.*`/`adminChatDetail.*`/`adminIdentities.*`/
+    `adminIdentityDetail.*`/`adminModules.*`/`adminConfig.*`/
+    `adminAuditLog.*`/`botView.*` namespaces in `en.ts`. Bot View's
+    confirmation-dialog sentence ("This will be posted in **{chat}**...")
+    dropped the inline bold emphasis on the chat name — `t()`'s
+    `{{placeholder}}` interpolation is plain-text-only, no embedded markup,
+    same limitation every other placeholder string in this table already
+    has, so this just makes that one page consistent with the rest rather
+    than reaching for something new. **Every page in the app is now
+    converted** — the only i18n-shaped item left on this file is RTL
+    itself (`dir="rtl"` wiring + the logical-CSS-properties migration
+    listed above), still fully unaddressed. Verified: `npm run lint` and
+    `npm run build` both clean.
   - **RTL groundwork, not attempted, needs flagging for later** (per
     `ARCHITECTURE.md` §9's own "pick it up later without a rewrite, not a
     blocker now" framing): a grep for hardcoded physical-direction CSS

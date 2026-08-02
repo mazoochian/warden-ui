@@ -16,6 +16,7 @@ import {
   Text,
 } from "@fluentui/react-components";
 import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import { useAuditLog } from "@/hooks/useAuditLog";
 
 function formatAt(ts: number) {
@@ -35,16 +36,13 @@ export default function AuditLogPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Audit Log"
-        description="Every mutating API call's trail -- who, what, when. Newest first."
-      />
+      <PageHeader title={t("adminAuditLog.title")} description={t("adminAuditLog.description")} />
 
-      <Section title="Filter">
+      <Section title={t("adminAuditLog.filter")}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <Input
-            aria-label="Filter by exact action"
-            placeholder="Filter by exact action, e.g. bot_view.send"
+            aria-label={t("adminAuditLog.filterLabel")}
+            placeholder={t("adminAuditLog.filterPlaceholder")}
             value={actionFilter}
             onChange={(_, data) => {
               setActionFilter(data.value);
@@ -60,24 +58,24 @@ export default function AuditLogPage() {
                 resetPaging();
               }}
             >
-              Clear
+              {t("adminAuditLog.clear")}
             </Button>
           )}
         </div>
       </Section>
 
-      <Section title="Entries">
-        {isLoading && <Body1 className={s.muted}>Loading...</Body1>}
-        {!isLoading && (data?.items.length ?? 0) === 0 && <EmptyState text="No audit log entries match this filter." />}
+      <Section title={t("adminAuditLog.entries")}>
+        {isLoading && <Body1 className={s.muted}>{t("adminAuditLog.loading")}</Body1>}
+        {!isLoading && (data?.items.length ?? 0) === 0 && <EmptyState text={t("adminAuditLog.none")} />}
         {!isLoading && (data?.items.length ?? 0) > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHeaderCell>When</TableHeaderCell>
-                <TableHeaderCell>Account</TableHeaderCell>
-                <TableHeaderCell>Action</TableHeaderCell>
-                <TableHeaderCell>Target</TableHeaderCell>
-                <TableHeaderCell>Detail</TableHeaderCell>
+                <TableHeaderCell>{t("adminAuditLog.columnWhen")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminAuditLog.columnAccount")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminAuditLog.columnAction")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminAuditLog.columnTarget")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminAuditLog.columnDetail")}</TableHeaderCell>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,17 +85,17 @@ export default function AuditLogPage() {
                     <Caption1>{formatAt(e.at)}</Caption1>
                   </TableCell>
                   <TableCell>
-                    <TableCellLayout>{e.account_id ?? <Caption1 className={s.muted}>system</Caption1>}</TableCellLayout>
+                    <TableCellLayout>{e.account_id ?? <Caption1 className={s.muted}>{t("adminAuditLog.system")}</Caption1>}</TableCellLayout>
                   </TableCell>
                   <TableCell>
                     <Text weight="semibold">{e.action}</Text>
                   </TableCell>
-                  <TableCell>{e.target ?? <Caption1 className={s.muted}>--</Caption1>}</TableCell>
+                  <TableCell>{e.target ?? <Caption1 className={s.muted}>{t("adminAuditLog.dash")}</Caption1>}</TableCell>
                   <TableCell>
                     {e.detail ? (
                       <Caption1 style={{ fontFamily: "monospace", wordBreak: "break-all" }}>{e.detail}</Caption1>
                     ) : (
-                      <Caption1 className={s.muted}>--</Caption1>
+                      <Caption1 className={s.muted}>{t("adminAuditLog.dash")}</Caption1>
                     )}
                   </TableCell>
                 </TableRow>
@@ -109,12 +107,12 @@ export default function AuditLogPage() {
         <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
           {cursors.length > 1 && (
             <Button appearance="secondary" onClick={() => setCursors((prev) => prev.slice(0, -1))}>
-              Previous page
+              {t("adminAuditLog.previousPage")}
             </Button>
           )}
           {data?.next_cursor != null && (
             <Button appearance="secondary" onClick={() => setCursors((prev) => [...prev, data.next_cursor as number])}>
-              Next page
+              {t("adminAuditLog.nextPage")}
             </Button>
           )}
         </div>

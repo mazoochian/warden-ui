@@ -3,6 +3,7 @@
 import { RecentChanges } from "@/components/RecentChanges";
 import { ModuleInfo, useModules, useSetModule } from "@/hooks/useAdminModules";
 import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import { Body1, Spinner, Switch, Text } from "@fluentui/react-components";
 
 function ModuleRow({ module }: { module: ModuleInfo }) {
@@ -34,17 +35,14 @@ export default function AdminModulesPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Modules"
-        description="Flipping a switch takes effect immediately -- disabling a module blocks creating/changing things through it (commands, /menu, and its natural-language equivalent where one exists), existing data stays visible."
-      />
+      <PageHeader title={t("adminModules.title")} description={t("adminModules.description")} />
 
-      {isPending && <Spinner label="Loading modules..." />}
-      {isError && <Section title="Modules">Failed to load modules.</Section>}
+      {isPending && <Spinner label={t("adminModules.loading")} />}
+      {isError && <Section title={t("adminModules.title")}>{t("adminModules.loadFailed")}</Section>}
 
       {data && (
         <>
-          <Section title="Commands">
+          <Section title={t("adminModules.commands")}>
             <div>
               {standalone.map((m) => (
                 <ModuleRow key={m.key} module={m} />
@@ -52,11 +50,8 @@ export default function AdminModulesPage() {
             </div>
           </Section>
 
-          <Section title="LLM tools">
-            <Body1 className={s.muted}>
-              Natural-language capabilities the model can use when answering -- filtered from the tool list per turn,
-              but toggle the same way as commands.
-            </Body1>
+          <Section title={t("adminModules.llmTools")}>
+            <Body1 className={s.muted}>{t("adminModules.llmToolsHint")}</Body1>
             <div>
               {llmTools.map((m) => (
                 <ModuleRow key={m.key} module={m} />
