@@ -22,6 +22,7 @@ export const en = {
   "nav.reminders": "Reminders",
   "nav.alerts": "Alerts",
   "nav.watches": "Watches",
+  "nav.notes": "Notes",
   "nav.convert": "Convert",
   "nav.groupAdministration": "Group Administration",
   "nav.adminChats": "Chats",

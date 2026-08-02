@@ -593,6 +593,57 @@ member/target lookups reused for "who am I sending to").*
     isn't wired into `FluentProvider` anywhere yet either — this is purely
     the map of what a real RTL pass would need to touch first.
 
+## Phase 8 — Notes (feature parity)
+*Effort: S. Dependencies: Phase 5a (same identity-scoped-list pattern).
+Status: done (2026-08-02). Not originally planned — added reactively once
+warden's own `ROADMAP.md` Phase 11 ("personal knowledge base: notes &
+lists") shipped bot-side (`/note` commands, `set_note` LLM tool) with no
+web API or frontend of its own, the same "zero frontend story" gap Phase
+5a closed for Reminders/Alerts/Watches.*
+
+- warden's Phase 11 landed with no `API.md`/`router.zig` work in scope at
+  all — checking `src/api/router.zig` there directly confirmed no
+  `/api/v1/notes` route existed before this phase. Added it there as part
+  of this same pass (a warden-repo change, not a warden-ui one): new
+  `GET`/`POST`/`DELETE /api/v1/notes`, identity-scoped by default across
+  every chat like Reminders/Alerts/Watches, reusing the exact same
+  `requireLoggedIn`/`resolveListIdentity`/`resolveCreateIdentity` helpers
+  those three already built rather than a new auth path. New
+  `notes.NoteForIdentity`/`notes.listForIdentity` in warden's
+  `store/notes.zig` (the original Phase 11 pass only needed the
+  chat-scoped `listForChat` the bot's own `/notes` command uses). Delete
+  authorization mirrors `/note delete` exactly (creator or bot owner) —
+  deliberately not Watches' looser "anyone currently in the chat" removal
+  model. Also registered `notes` in `feature_flags.known_modules`, which
+  Phase 11 had left off despite `main.zig` already gating `/note`/
+  `set_note` against that exact key — the toggle silently never appeared
+  on `/admin/modules` until this. See warden's own `ROADMAP.md` Phase 11
+  entry and `API.md`'s "Feature parity" section here for the full
+  writeup.
+- Frontend: `src/app/(dashboard)/notes/page.tsx` (list/create/delete),
+  `src/hooks/useNotes.ts`, an `AppShell` nav entry between Watches and
+  Convert — modeled closest on the Watches page (simplest of the three
+  Phase 5a forms: one chat picker plus one field, no date/time or
+  kind/condition sub-forms), except the note-text field is a `Textarea`
+  (up to 1000 bytes, mirroring `/note add`'s own cap) rather than a
+  single-line `Input`, since a note or list entry is realistically longer
+  than a feed URL.
+- **Not done, deliberately out of scope for this pass**: i18n extraction
+  for the new page (Phase 7's `t()` conversion covered Reminders/Alerts/
+  Watches specifically as an already-bounded pass before this page
+  existed; Notes joins the same "not yet converted" list as Moderation/
+  Convert/Groups/Settings/Account) and RTL — no new hardcoded `left`/
+  `right` CSS was introduced by this phase, so Phase 7's existing RTL
+  note doesn't need updating.
+- Verified: warden side, `zig build` and `zig build test` both green
+  (checked in an isolated `git worktree`, not the live checkout — see
+  warden's own `ROADMAP.md` Phase 11 entry for why: an unrelated,
+  uncommitted, in-progress Phase 12 pass was sitting in that working tree
+  and breaks every DB-touching test locally, for reasons unrelated to
+  this phase). warden-ui side, `npm run build` and `npm run lint` both
+  clean in the normal checkout (no interference — the Phase 12 work only
+  exists in the warden repo).
+
 ---
 
 ## Cross-cutting things every phase should check
