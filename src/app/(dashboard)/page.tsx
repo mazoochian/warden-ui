@@ -15,6 +15,7 @@ import {
   Timeline24Regular,
 } from "@fluentui/react-icons";
 import Link from "next/link";
+import { t } from "@/lib/i18n";
 
 function formatTimestamp(seconds: number) {
   return new Date(seconds * 1000).toLocaleString();
@@ -26,21 +27,18 @@ function NonAdminDashboard() {
   const firstName = session?.authenticated ? session.display_name.split(" ")[0] : "there";
   return (
     <div className={s.page}>
-      <PageHeader title={`Welcome back, ${firstName}`} description="Warden is running normally." />
+      <PageHeader title={t("dashboard.welcome", { name: firstName })} description={t("dashboard.runningNormally")} />
       <Card className={s.section}>
-        <Subtitle1>Nothing bot-wide to show here</Subtitle1>
-        <Body1 className={s.muted}>
-          Bot-wide statistics are only visible to bot admins. Everything you can change lives under your groups and
-          your personal settings.
-        </Body1>
+        <Subtitle1>{t("dashboard.nothingTitle")}</Subtitle1>
+        <Body1 className={s.muted}>{t("dashboard.nothingBody")}</Body1>
         <div className={s.row}>
           <Link href="/groups">
             <Button appearance="primary" icon={<PeopleTeam24Regular />}>
-              Go to My Groups
+              {t("dashboard.goToGroups")}
             </Button>
           </Link>
           <Link href="/settings">
-            <Button>Personal settings</Button>
+            <Button>{t("dashboard.personalSettings")}</Button>
           </Link>
         </div>
       </Card>
@@ -62,20 +60,20 @@ export default function DashboardPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader title="Dashboard" description="Bot-wide activity across Telegram, Matrix and XMPP." />
+      <PageHeader title={t("dashboard.title")} description={t("dashboard.description")} />
 
-      {isPending && <Spinner label="Loading stats..." />}
-      {isError && <Body1>Failed to load stats.</Body1>}
+      {isPending && <Spinner label={t("dashboard.loadingStats")} />}
+      {isError && <Body1>{t("dashboard.failedStats")}</Body1>}
 
       {stats && (
         <div className={s.tiles}>
-          <StatTile label="Total messages" value={stats.total_messages} icon={<Chat24Regular fontSize={18} />} />
-          <StatTile label="Total chats" value={stats.total_chats} icon={<PeopleTeam24Regular fontSize={18} />} />
-          <StatTile label="Total users" value={stats.total_identities} icon={<People24Regular fontSize={18} />} />
-          <StatTile label="Messages · 24h" value={stats.messages_last_24h} icon={<Pulse24Regular fontSize={18} />} />
-          <StatTile label="Messages · 7d" value={stats.messages_last_7d} icon={<Timeline24Regular fontSize={18} />} />
+          <StatTile label={t("dashboard.statTotalMessages")} value={stats.total_messages} icon={<Chat24Regular fontSize={18} />} />
+          <StatTile label={t("dashboard.statTotalChats")} value={stats.total_chats} icon={<PeopleTeam24Regular fontSize={18} />} />
+          <StatTile label={t("dashboard.statTotalUsers")} value={stats.total_identities} icon={<People24Regular fontSize={18} />} />
+          <StatTile label={t("dashboard.statMessages24h")} value={stats.messages_last_24h} icon={<Pulse24Regular fontSize={18} />} />
+          <StatTile label={t("dashboard.statMessages7d")} value={stats.messages_last_7d} icon={<Timeline24Regular fontSize={18} />} />
           <StatTile
-            label="Active chats · 7d"
+            label={t("dashboard.statActiveChats7d")}
             value={stats.active_chats_last_7d}
             icon={<Clock24Regular fontSize={18} />}
           />
@@ -83,16 +81,16 @@ export default function DashboardPage() {
       )}
 
       <Section
-        title="Busiest chats"
+        title={t("dashboard.busiestChats")}
         action={
           <Link href="/admin/chats">
             <Button size="small" appearance="subtle">
-              All chats
+              {t("dashboard.allChats")}
             </Button>
           </Link>
         }
       >
-        {busiest.length === 0 && <EmptyState text="No chats yet." />}
+        {busiest.length === 0 && <EmptyState text={t("dashboard.noChats")} />}
         <div>
           {busiest.map((c) => (
             <div key={c.id} className={s.listRow}>
@@ -101,7 +99,7 @@ export default function DashboardPage() {
                 <PlatformBadge platform={c.platform} />
               </div>
               <Caption1 className={s.muted}>
-                {c.message_count.toLocaleString()} messages · {c.member_count} members
+                {t("dashboard.chatSummary", { count: c.message_count.toLocaleString(), members: c.member_count })}
               </Caption1>
             </div>
           ))}
@@ -109,16 +107,16 @@ export default function DashboardPage() {
       </Section>
 
       <Section
-        title="Recent panel activity"
+        title={t("dashboard.recentActivity")}
         action={
           <Link href="/admin/audit-log">
             <Button size="small" appearance="subtle">
-              Audit log
+              {t("dashboard.auditLog")}
             </Button>
           </Link>
         }
       >
-        {(!recent || recent.items.length === 0) && <EmptyState text="No panel activity yet." />}
+        {(!recent || recent.items.length === 0) && <EmptyState text={t("dashboard.noActivity")} />}
         <div>
           {recent?.items.map((e) => (
             <div key={e.id} className={s.listRow}>

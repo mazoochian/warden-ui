@@ -1,7 +1,7 @@
 "use client";
 
 import { MySettings, useMySettings, useSetMySettings } from "@/hooks/useMySettings";
-import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
 import { Button, Field, Input, Spinner } from "@fluentui/react-components";
 import { useState } from "react";
 
@@ -37,7 +37,6 @@ function parseOffset(text: string): number | null {
 /** Seeds its editable state directly from `initial` (no effect needed --
  * mounted fresh, via `key`, whenever the loaded data actually changes). */
 function SettingsForm({ initial }: { initial: MySettings }) {
-  const s = useCommonStyles();
   const setSettings = useSetMySettings();
 
   const [offsetText, setOffsetText] = useState(formatOffset(initial.utc_offset_minutes));
@@ -64,31 +63,11 @@ function SettingsForm({ initial }: { initial: MySettings }) {
       </Field>
 
       <Field label="Date format">
-        <div className={s.row}>
-          {dateFormats.map((f) => (
-            <Button
-              key={f.value}
-              appearance={dateFormat === f.value ? "primary" : "secondary"}
-              onClick={() => setDateFormat(f.value)}
-            >
-              {f.label}
-            </Button>
-          ))}
-        </div>
+        <ToggleButtonGroup ariaLabel="Date format" value={dateFormat} options={dateFormats} onChange={setDateFormat} />
       </Field>
 
       <Field label="Time format">
-        <div className={s.row}>
-          {timeFormats.map((f) => (
-            <Button
-              key={f.value}
-              appearance={timeFormat === f.value ? "primary" : "secondary"}
-              onClick={() => setTimeFormat(f.value)}
-            >
-              {f.label}
-            </Button>
-          ))}
-        </div>
+        <ToggleButtonGroup ariaLabel="Time format" value={timeFormat} options={timeFormats} onChange={setTimeFormat} />
       </Field>
 
       <Button

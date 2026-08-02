@@ -24,6 +24,7 @@ import {
 import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
 import { useMyChats } from "@/hooks/useMyChats";
 import { ApiError } from "@/lib/api";
+import { t } from "@/lib/i18n";
 import { useCreateWatch, useDeleteWatch, useWatches } from "@/hooks/useWatches";
 
 function NewWatchForm() {
@@ -43,11 +44,11 @@ function NewWatchForm() {
   };
 
   return (
-    <Section title="New watch">
+    <Section title={t("watches.newWatch")}>
       <div className={s.formGrid}>
-        <Field label="Chat">
+        <Field label={t("watches.chatLabel")}>
           <Dropdown
-            placeholder="Select a chat"
+            placeholder={t("watches.selectChat")}
             selectedOptions={chatId ? [String(chatId)] : []}
             value={chatOptions.find((c) => c.id === chatId)?.title ?? chatOptions.find((c) => c.id === chatId)?.native_chat_id ?? ""}
             onOptionSelect={(_, d) => setChatId(d.optionValue ? Number(d.optionValue) : undefined)}
@@ -60,19 +61,19 @@ function NewWatchForm() {
           </Dropdown>
         </Field>
 
-        <Field label="Feed URL">
-          <Input value={feedUrl} onChange={(_, d) => setFeedUrl(d.value)} placeholder="https://example.com/feed.xml" />
+        <Field label={t("watches.feedUrlLabel")}>
+          <Input value={feedUrl} onChange={(_, d) => setFeedUrl(d.value)} placeholder={t("watches.feedUrlPlaceholder")} />
         </Field>
       </div>
 
       {createWatch.isError && (
         <MessageBar intent="error">
-          <MessageBarBody>{createWatch.error instanceof ApiError ? createWatch.error.message : "Couldn't add that watch."}</MessageBarBody>
+          <MessageBarBody>{createWatch.error instanceof ApiError ? createWatch.error.message : t("watches.createFailed")}</MessageBarBody>
         </MessageBar>
       )}
 
       <Button appearance="primary" disabled={!canSubmit || createWatch.isPending} onClick={submit} style={{ alignSelf: "flex-start" }}>
-        Add watch
+        {t("watches.add")}
       </Button>
     </Section>
   );
@@ -85,23 +86,20 @@ export default function WatchesPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Watches"
-        description="RSS/Atom feeds you've added, across every chat you're a member of -- mirrors /watch. Anyone in a chat can remove a watch there, not just whoever added it."
-      />
+      <PageHeader title={t("watches.title")} description={t("watches.description")} />
 
       <NewWatchForm />
 
-      <Section title="Watching">
-        {isPending && <Spinner label="Loading watches..." />}
-        {isError && <Body1>Failed to load watches.</Body1>}
-        {data && data.items.length === 0 && <EmptyState text="Not watching any feeds." />}
+      <Section title={t("watches.watching")}>
+        {isPending && <Spinner label={t("watches.loading")} />}
+        {isError && <Body1>{t("watches.loadFailed")}</Body1>}
+        {data && data.items.length === 0 && <EmptyState text={t("watches.none")} />}
         {data && data.items.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHeaderCell>Chat</TableHeaderCell>
-                <TableHeaderCell>Feed</TableHeaderCell>
+                <TableHeaderCell>{t("watches.columnChat")}</TableHeaderCell>
+                <TableHeaderCell>{t("watches.columnFeed")}</TableHeaderCell>
                 <TableHeaderCell />
               </TableRow>
             </TableHeader>
@@ -120,7 +118,7 @@ export default function WatchesPage() {
                   </TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => deleteWatch.mutate(w.id)} disabled={deleteWatch.isPending}>
-                      Unwatch
+                      {t("watches.unwatch")}
                     </Button>
                   </TableCell>
                 </TableRow>

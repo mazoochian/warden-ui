@@ -17,6 +17,7 @@ import { GlobeRegular } from "@fluentui/react-icons";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { t } from "@/lib/i18n";
 
 const useStyles = makeStyles({
   page: {
@@ -59,34 +60,31 @@ export default function LoginPage() {
     <div className={styles.page}>
       <Card className={styles.card}>
         <div className={styles.brand}>
-          <Image src="/warden-mark.png" alt="Warden" width={36} height={36} className={styles.mark} priority />
+          <Image src="/warden-mark.png" alt={t("nav.brandAlt")} width={36} height={36} className={styles.mark} priority />
           <div>
             <Title2 as="h1" block>
-              Warden
+              {t("nav.brand")}
             </Title2>
-            <Caption1 className={styles.muted}>Sign in to the control panel.</Caption1>
+            <Caption1 className={styles.muted}>{t("login.subtitle")}</Caption1>
           </div>
         </div>
 
         <div className={styles.stack}>
-          {providersLoading && <Spinner size="tiny" label="Loading sign-in options..." />}
+          {providersLoading && <Spinner size="tiny" label={t("login.loadingProviders")} />}
 
           {!providersLoading && (providers?.oidc?.length ?? 0) === 0 && (
-            <Body1 className={styles.muted}>No sign-in provider is configured on this deployment yet.</Body1>
+            <Body1 className={styles.muted}>{t("login.noProvider")}</Body1>
           )}
 
           {!providersLoading &&
             providers?.oidc.map((p) => (
               <Button key={p.id} as="a" href={`/api/v1/auth/oidc/${p.id}/start`} appearance="primary" icon={<GlobeRegular />}>
-                Continue with {p.name}
+                {t("login.continueWith", { name: p.name })}
               </Button>
             ))}
 
           {!providersLoading && (providers?.oidc?.length ?? 0) > 0 && (
-            <Caption1 className={styles.muted}>
-              Redirects to {providers!.oidc[0].name}&apos;s own sign-in page (OIDC). Warden never sees your password
-              there.
-            </Caption1>
+            <Caption1 className={styles.muted}>{t("login.oidcHint", { name: providers!.oidc[0].name })}</Caption1>
           )}
         </div>
       </Card>

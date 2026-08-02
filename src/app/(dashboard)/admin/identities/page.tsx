@@ -1,7 +1,7 @@
 "use client";
 
 import { useIdentities } from "@/hooks/useAdminDirectory";
-import { PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
+import { clickableRowProps, PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
 import {
   Badge,
   SearchBox,
@@ -41,7 +41,7 @@ export default function AdminIdentitiesPage() {
       {rows && (
         <Section
           title={`${rows.length} user${rows.length === 1 ? "" : "s"}`}
-          action={<SearchBox placeholder="Filter" value={query} onChange={(_, d) => setQuery(d.value ?? "")} />}
+          action={<SearchBox aria-label="Filter users" placeholder="Filter" value={query} onChange={(_, d) => setQuery(d.value ?? "")} />}
         >
           <Table size="small" aria-label="Users">
             <TableHeader>
@@ -58,7 +58,7 @@ export default function AdminIdentitiesPage() {
                 <TableRow
                   key={identity.id}
                   className={s.clickableRow}
-                  onClick={() => router.push(`/admin/identities/${identity.id}`)}
+                  {...clickableRowProps(() => router.push(`/admin/identities/${identity.id}`))}
                 >
                   <TableCell>
                     <TableCellLayout>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useChats } from "@/hooks/useAdminDirectory";
-import { PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
+import { clickableRowProps, PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
 import {
   Badge,
   SearchBox,
@@ -39,7 +39,7 @@ export default function AdminChatsPage() {
       {rows && (
         <Section
           title={`${rows.length} chat${rows.length === 1 ? "" : "s"}`}
-          action={<SearchBox placeholder="Filter" value={query} onChange={(_, d) => setQuery(d.value ?? "")} />}
+          action={<SearchBox aria-label="Filter chats" placeholder="Filter" value={query} onChange={(_, d) => setQuery(d.value ?? "")} />}
         >
           <Table size="small" aria-label="Chats">
             <TableHeader>
@@ -53,7 +53,11 @@ export default function AdminChatsPage() {
             </TableHeader>
             <TableBody>
               {rows.map((chat) => (
-                <TableRow key={chat.id} className={s.clickableRow} onClick={() => router.push(`/admin/chats/${chat.id}`)}>
+                <TableRow
+                  key={chat.id}
+                  className={s.clickableRow}
+                  {...clickableRowProps(() => router.push(`/admin/chats/${chat.id}`))}
+                >
                   <TableCell>
                     <TableCellLayout>
                       <Text weight="semibold">{chat.title ?? chat.native_chat_id}</Text>

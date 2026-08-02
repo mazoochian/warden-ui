@@ -85,6 +85,7 @@ export default function BotViewPage() {
       <Section title="Chat">
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           <Dropdown
+            aria-label="Select a chat"
             placeholder={chatsLoading ? "Loading chats..." : "Select a chat"}
             value={selectedChat ? (selectedChat.title ?? selectedChat.native_chat_id) : ""}
             selectedOptions={chatId !== null ? [String(chatId)] : []}
@@ -147,6 +148,7 @@ export default function BotViewPage() {
                 </MessageBarBody>
               </MessageBar>
               <Textarea
+                aria-label="Message to send as the bot"
                 placeholder="Type a message to send as the bot..."
                 value={draft}
                 onChange={(_, data) => setDraft(data.value)}

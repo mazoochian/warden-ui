@@ -23,19 +23,29 @@ import {
   Text,
   Textarea,
 } from "@fluentui/react-components";
-import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { EmptyState, PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
 import { useMyChats } from "@/hooks/useMyChats";
 import { ApiError } from "@/lib/api";
+import { t } from "@/lib/i18n";
 import { useCancelReminder, useCreateReminder, useReminders, type CreateReminderWhen } from "@/hooks/useReminders";
 
 type DurationUnit = "minutes" | "hours" | "days";
 const unitSeconds: Record<DurationUnit, number> = { minutes: 60, hours: 3600, days: 86400 };
+const unitOptions: { value: DurationUnit; label: string }[] = [
+  { value: "minutes", label: t("reminders.unitMinutes") },
+  { value: "hours", label: t("reminders.unitHours") },
+  { value: "days", label: t("reminders.unitDays") },
+];
+const whenModeOptions = [
+  { value: "duration" as const, label: t("reminders.fromNow") },
+  { value: "absolute" as const, label: t("reminders.specificDateTime") },
+];
 
 function formatRecur(seconds: number | null) {
-  if (!seconds) return "—";
-  if (seconds % 86400 === 0) return `every ${seconds / 86400}d`;
-  if (seconds % 3600 === 0) return `every ${seconds / 3600}h`;
-  return `every ${Math.round(seconds / 60)}m`;
+  if (!seconds) return t("reminders.recurNone");
+  if (seconds % 86400 === 0) return t("reminders.recurDays", { n: seconds / 86400 });
+  if (seconds % 3600 === 0) return t("reminders.recurHours", { n: seconds / 3600 });
+  return t("reminders.recurMinutes", { n: Math.round(seconds / 60) });
 }
 
 function NewReminderForm() {
@@ -87,11 +97,11 @@ function NewReminderForm() {
   };
 
   return (
-    <Section title="New reminder">
+    <Section title={t("reminders.newReminder")}>
       <div className={s.formGrid}>
-        <Field label="Chat">
+        <Field label={t("reminders.chatLabel")}>
           <Dropdown
-            placeholder="Select a chat"
+            placeholder={t("reminders.selectChat")}
             selectedOptions={chatId ? [String(chatId)] : []}
             value={chatOptions.find((c) => c.id === chatId)?.title ?? chatOptions.find((c) => c.id === chatId)?.native_chat_id ?? ""}
             onOptionSelect={(_, d) => setChatId(d.optionValue ? Number(d.optionValue) : undefined)}
@@ -104,60 +114,83 @@ function NewReminderForm() {
           </Dropdown>
         </Field>
 
-        <Field label="When">
-          <div className={s.row}>
-            <Button appearance={mode === "duration" ? "primary" : "secondary"} onClick={() => setMode("duration")}>
-              From now
-            </Button>
-            <Button appearance={mode === "absolute" ? "primary" : "secondary"} onClick={() => setMode("absolute")}>
-              Specific date/time
-            </Button>
-          </div>
+        <Field label={t("reminders.whenLabel")}>
+          <ToggleButtonGroup ariaLabel={t("reminders.whenLabel")} value={mode} options={whenModeOptions} onChange={setMode} />
         </Field>
       </div>
 
       {mode === "duration" ? (
         <div className={s.row}>
-          <Input type="number" min={1} value={amount} onChange={(_, d) => setAmount(d.value)} style={{ width: 100 }} />
-          <Dropdown value={unit} selectedOptions={[unit]} onOptionSelect={(_, d) => d.optionValue && setUnit(d.optionValue as DurationUnit)}>
-            <Option value="minutes">minutes</Option>
-            <Option value="hours">hours</Option>
-            <Option value="days">days</Option>
+          <Input
+            type="number"
+            min={1}
+            value={amount}
+            onChange={(_, d) => setAmount(d.value)}
+            style={{ width: 100 }}
+            aria-label={t("reminders.amount")}
+          />
+          <Dropdown
+            value={unitOptions.find((o) => o.value === unit)?.label ?? unit}
+            selectedOptions={[unit]}
+            onOptionSelect={(_, d) => d.optionValue && setUnit(d.optionValue as DurationUnit)}
+            aria-label={t("reminders.unit")}
+          >
+            {unitOptions.map((o) => (
+              <Option key={o.value} value={o.value}>
+                {o.label}
+              </Option>
+            ))}
           </Dropdown>
-          <Caption1 className={s.muted}>from now</Caption1>
+          <Caption1 className={s.muted}>{t("reminders.fromNowSuffix")}</Caption1>
         </div>
       ) : (
         <div className={s.row}>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-          <Caption1 className={s.muted}>your local time (see Personal Settings for timezone/format)</Caption1>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label={t("reminders.dateInput")} />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label={t("reminders.timeInput")} />
+          <Caption1 className={s.muted}>{t("reminders.localTimeHint")}</Caption1>
         </div>
       )}
 
-      <Field label="Message">
+      <Field label={t("reminders.messageLabel")}>
         <Textarea value={message} onChange={(_, d) => setMessage(d.value)} rows={2} />
       </Field>
 
-      <Switch checked={repeats} onChange={(_, d) => setRepeats(d.checked)} label="Repeats" />
+      <Switch checked={repeats} onChange={(_, d) => setRepeats(d.checked)} label={t("reminders.repeats")} />
       {repeats && (
         <div className={s.row}>
-          <Input type="number" min={1} value={repeatAmount} onChange={(_, d) => setRepeatAmount(d.value)} style={{ width: 100 }} />
-          <Dropdown value={repeatUnit} selectedOptions={[repeatUnit]} onOptionSelect={(_, d) => d.optionValue && setRepeatUnit(d.optionValue as DurationUnit)}>
-            <Option value="minutes">minutes</Option>
-            <Option value="hours">hours</Option>
-            <Option value="days">days</Option>
+          <Input
+            type="number"
+            min={1}
+            value={repeatAmount}
+            onChange={(_, d) => setRepeatAmount(d.value)}
+            style={{ width: 100 }}
+            aria-label={t("reminders.repeatAmount")}
+          />
+          <Dropdown
+            value={unitOptions.find((o) => o.value === repeatUnit)?.label ?? repeatUnit}
+            selectedOptions={[repeatUnit]}
+            onOptionSelect={(_, d) => d.optionValue && setRepeatUnit(d.optionValue as DurationUnit)}
+            aria-label={t("reminders.repeatUnit")}
+          >
+            {unitOptions.map((o) => (
+              <Option key={o.value} value={o.value}>
+                {o.label}
+              </Option>
+            ))}
           </Dropdown>
         </div>
       )}
 
       {createReminder.isError && (
         <MessageBar intent="error">
-          <MessageBarBody>{createReminder.error instanceof ApiError ? createReminder.error.message : "Couldn't create that reminder."}</MessageBarBody>
+          <MessageBarBody>
+            {createReminder.error instanceof ApiError ? createReminder.error.message : t("reminders.createFailed")}
+          </MessageBarBody>
         </MessageBar>
       )}
 
       <Button appearance="primary" disabled={!canSubmit || createReminder.isPending} onClick={submit} style={{ alignSelf: "flex-start" }}>
-        Create reminder
+        {t("reminders.create")}
       </Button>
     </Section>
   );
@@ -170,25 +203,22 @@ export default function RemindersPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Reminders"
-        description="Reminders you've set, across every chat you're a member of. Cancel your own -- the bot owner can cancel anyone's."
-      />
+      <PageHeader title={t("reminders.title")} description={t("reminders.description")} />
 
       <NewReminderForm />
 
-      <Section title="Pending">
-        {isPending && <Spinner label="Loading reminders..." />}
-        {isError && <Body1>Failed to load reminders.</Body1>}
-        {data && data.items.length === 0 && <EmptyState text="No pending reminders." />}
+      <Section title={t("reminders.pending")}>
+        {isPending && <Spinner label={t("reminders.loading")} />}
+        {isError && <Body1>{t("reminders.loadFailed")}</Body1>}
+        {data && data.items.length === 0 && <EmptyState text={t("reminders.none")} />}
         {data && data.items.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHeaderCell>Chat</TableHeaderCell>
-                <TableHeaderCell>Message</TableHeaderCell>
-                <TableHeaderCell>Due</TableHeaderCell>
-                <TableHeaderCell>Repeats</TableHeaderCell>
+                <TableHeaderCell>{t("reminders.columnChat")}</TableHeaderCell>
+                <TableHeaderCell>{t("reminders.columnMessage")}</TableHeaderCell>
+                <TableHeaderCell>{t("reminders.columnDue")}</TableHeaderCell>
+                <TableHeaderCell>{t("reminders.columnRepeats")}</TableHeaderCell>
                 <TableHeaderCell />
               </TableRow>
             </TableHeader>
@@ -207,7 +237,7 @@ export default function RemindersPage() {
                   <TableCell>{formatRecur(r.recur_interval_seconds)}</TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => cancelReminder.mutate(r.id)} disabled={cancelReminder.isPending}>
-                      Cancel
+                      {t("reminders.cancel")}
                     </Button>
                   </TableCell>
                 </TableRow>

@@ -492,15 +492,106 @@ member/target lookups reused for "who am I sending to").*
   to ES256 via BotFather. Real RS256 support would still need a
   hand-rolled RSA-PKCS1v1.5 verify if a *future* provider requires it
   specifically; not needed for anything in production today.
-- Accessibility pass (Fluent UI React is decent out of the box here, but
-  don't assume it for free — verify keyboard nav and screen-reader
-  labeling on every custom composite component, e.g. the reminder
-  date/time picker and Bot View's compose box). **Not done this pass** —
-  flagged, not silently dropped.
-- i18n/RTL groundwork (`ARCHITECTURE.md` §9) — at minimum, structure
-  strings for extraction even if Persian translation itself isn't done
-  yet. **Not done this pass** — flagged, not silently dropped; still not
-  a blocker per `ARCHITECTURE.md` §9's own framing.
+- **Done (2026-08-02):** Accessibility pass across every custom composite
+  component in the app (Fluent primitives used as-is were left alone —
+  confirmed via `@fluentui/react-field`'s source that `Dropdown`/`Input`/
+  `Textarea`/`Switch` already pick up a wrapping `<Field label>`'s
+  `aria-labelledby` through React context automatically, so those didn't
+  need touching; only genuinely custom compositions and controls with no
+  `Field` ancestor at all did).
+  - New `ToggleButtonGroup` (`src/components/ui-kit.tsx`) replaces the
+    hand-rolled "row of `Button`s, `appearance` swapped for the selected
+    one" pattern that five different pages had each independently
+    reinvented — visually a Button toggle showed which option was
+    selected, but nothing told a screen reader, and the group of buttons
+    had no collective name. Uses the "pressed toggle button" ARIA pattern
+    (`aria-pressed` per button inside a labeled `role="group"`), not
+    `radiogroup`/`radio` — these stay individually Tab-reachable, and
+    `radiogroup` would promise arrow-key navigation this doesn't
+    implement. Adopted in `reminders/page.tsx` (when-mode), `alerts/page.tsx`
+    (condition), `moderation/page.tsx` (redact mode), `groups/[id]/page.tsx`
+    (thinking display), `settings/page.tsx` (date/time format).
+  - New `clickableRowProps()` (`ui-kit.tsx`) fixes a real keyboard-trap-
+    adjacent bug: `admin/chats/page.tsx`, `admin/identities/page.tsx`, and
+    `groups/page.tsx` each had a `TableRow` with a bare `onClick` that
+    navigated to a detail page — mouse-only, no keyboard equivalent at
+    all, no affordance telling assistive tech the row did anything. Now
+    `role="button"` + `tabIndex={0}` + Enter/Space `onKeyDown`. Trades away
+    the row's native `row`/`gridcell` semantics for its cells (a real,
+    accepted cost) in exchange for being reachable at all.
+  - Convert page's (`convert/page.tsx`) drag-and-drop zone was a plain
+    `<div onClick>` — entirely unreachable by keyboard, since the file
+    `<input>` it triggered was `display: none` and never itself focusable.
+    Now `role="button"`, `tabIndex={0}`, `onKeyDown` (Enter/Space opens the
+    file picker), and a state-reflecting `aria-label`; the hidden input
+    got `tabIndex={-1}`/`aria-hidden` since the wrapping div is the real
+    control now.
+  - Explicit `aria-label`s added to controls that had **no** accessible
+    name at all (not wrapped in `Field`, no visible `<label>`, placeholder-
+    only): Bot View's compose `Textarea` and chat `Dropdown`
+    (`bot-view/page.tsx`); Moderation's chat `Dropdown` and member
+    `SearchBox` (`moderation/page.tsx`); Admin Modules' per-module `Switch`
+    (`admin/modules/page.tsx` — the visible label `Text` next to it was
+    never programmatically associated); Admin Config's per-setting `Input`
+    (`admin/config/page.tsx`); the `SearchBox`es on Admin Chats/Identities
+    and the action filter `Input` on Admin Audit Log; Reminders' native
+    `<input type="date">`/`<input type="time">` and its duration/repeat
+    `Input`/`Dropdown` pairs (`reminders/page.tsx`) — none of these had an
+    accessible name before, placeholder text isn't a reliable substitute.
+  - Reviewed, left alone (already correct): Bot View's send-confirmation
+    `Dialog` (Fluent handles focus trap, Escape-to-close, and focus
+    restore on close natively), `AppShell`'s collapsed-nav `Tooltip
+    relationship="label"` pattern, the nav category-expand buttons (native
+    `<button>` + `aria-expanded`), `ThemeToggle` (already had `aria-label`
+    + `title`).
+  - Verified with `npm run build` + `npm run lint` (both clean) and a
+    keyboard-nav reasoning pass over every diff above (tab order, Enter/
+    Space activation) rather than a screenshot — a screenshot can't show
+    tab order or ARIA state, reasoning through the actual markup/handlers
+    is the only thing that actually proves this class of fix.
+- **Done (2026-08-02), partial by design:** i18n/RTL groundwork
+  (`ARCHITECTURE.md` §9). No i18n framework dependency added (nothing in
+  `package.json` already pulled one in, and the app doesn't need per-route
+  bundles or ICU plural rules at this scale) — new `src/lib/i18n/en.ts`
+  (a flat, page-scoped `key -> English string` table) and
+  `src/lib/i18n/index.ts` (`t(key, values?)` lookup with `{{placeholder}}`
+  interpolation). A future `fa.ts` (or any other locale) is "write an
+  object satisfying `Record<I18nKey, string>` — a missing key is a
+  compile error via `satisfies`, not a silent runtime fallback" — see that
+  file's own doc comment for exactly what wiring a second locale in would
+  still need (a locale-selection context, not built here).
+  - **Converted to `t()`:** `src/components/AppShell.tsx` (every nav
+    label, brand text, group labels, collapse/expand, log out), the login
+    page, the dashboard page, and the Reminders/Alerts/Watches pages
+    (title, description, every field label, every button/table-header/
+    empty-state string) — the highest-traffic surfaces, per the original
+    ask.
+  - **Not converted, flagged not silently dropped:** every admin page
+    (Chats/Identities/Modules/Config/Audit Log directories and detail
+    views), Moderation, Bot View, Convert, Groups (list + per-group
+    settings), Personal Settings, and Account & Sessions — all still plain
+    hardcoded English strings. Picking these up later is mechanical (the
+    same `t("page.key")` substitution already done six times over), just
+    not attempted here to keep this pass to a bounded, real subset rather
+    than touching every `.tsx` file in one sweep.
+  - **RTL groundwork, not attempted, needs flagging for later** (per
+    `ARCHITECTURE.md` §9's own "pick it up later without a rewrite, not a
+    blocker now" framing): a grep for hardcoded physical-direction CSS
+    across `src/` turned up several spots that would need to become
+    logical properties (`insetInlineStart`/`marginInlineStart`/
+    `paddingInlineStart`/`borderInlineStart`/`borderStartStartRadius`/etc.)
+    for a real RTL layout: `AppShell.tsx`'s `useStyles` — the nav active-
+    item accent pill (`left: "1px"` in `navItemActive`'s `::before`), the
+    sub-nav indent (`sub: { paddingLeft: "26px" }`), and the content
+    `layer`'s hairline stroke + rounded corner (`shorthands.borderLeft`,
+    `borderTopLeftRadius`); `ui-kit.tsx`'s `accentBar` helper
+    (`shorthands.borderLeft` + `paddingLeft`); `bot-view/page.tsx`'s live-
+    feed scroll container (`paddingRight: "4px"`, inline style); and
+    `marginLeft`/`marginRight` inline styles on a handful of `Badge`s next
+    to text (`account/page.tsx`, `admin/config/page.tsx`,
+    `admin/identities/page.tsx`). None of this was changed — `dir="rtl"`
+    isn't wired into `FluentProvider` anywhere yet either — this is purely
+    the map of what a real RTL pass would need to touch first.
 
 ---
 
