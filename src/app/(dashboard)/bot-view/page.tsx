@@ -21,6 +21,7 @@ import {
   Textarea,
 } from "@fluentui/react-components";
 import { PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import { useMyChats } from "@/hooks/useMyChats";
 import { useSession } from "@/hooks/useSession";
 import { useAutoScroll, useBotViewFeed, useBotViewSend } from "@/hooks/useBotView";
@@ -51,12 +52,9 @@ export default function BotViewPage() {
   if (session?.authenticated && !session.roles.owner) {
     return (
       <div className={s.page}>
-        <PageHeader title="Bot View" description="Watch a chat live and reply as the bot." />
+        <PageHeader title={t("botView.title")} description={t("botView.ownerOnlyDescription")} />
         <MessageBar intent="warning">
-          <MessageBarBody>
-            Bot View is owner-only -- it lets whoever uses it post messages real users will see as coming from the bot
-            itself, so it isn&apos;t extended to bot admins the way most other admin actions are.
-          </MessageBarBody>
+          <MessageBarBody>{t("botView.ownerOnlyWarning")}</MessageBarBody>
         </MessageBar>
       </div>
     );
@@ -77,16 +75,13 @@ export default function BotViewPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Bot View"
-        description="Live incoming messages for a chat, and a confirmation-gated compose box to reply as the bot itself."
-      />
+      <PageHeader title={t("botView.title")} description={t("botView.description")} />
 
-      <Section title="Chat">
+      <Section title={t("botView.chat")}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           <Dropdown
-            aria-label="Select a chat"
-            placeholder={chatsLoading ? "Loading chats..." : "Select a chat"}
+            aria-label={t("botView.selectChat")}
+            placeholder={chatsLoading ? t("botView.loadingChats") : t("botView.selectChat")}
             value={selectedChat ? (selectedChat.title ?? selectedChat.native_chat_id) : ""}
             selectedOptions={chatId !== null ? [String(chatId)] : []}
             onOptionSelect={(_, data) => setChatId(data.optionValue ? Number(data.optionValue) : null)}
@@ -101,7 +96,7 @@ export default function BotViewPage() {
             <>
               {selectedChat && <PlatformBadge platform={selectedChat.platform} />}
               <Badge appearance="tint" color={connected ? "success" : "danger"}>
-                {connected ? "Live" : "Reconnecting..."}
+                {connected ? t("botView.live") : t("botView.reconnecting")}
               </Badge>
             </>
           )}
@@ -110,7 +105,7 @@ export default function BotViewPage() {
 
       {chatId !== null && (
         <>
-          <Section title="Live incoming messages">
+          <Section title={t("botView.liveMessages")}>
             <div
               ref={feedRef}
               style={{
@@ -122,11 +117,7 @@ export default function BotViewPage() {
                 paddingRight: "4px",
               }}
             >
-              {events.length === 0 && (
-                <Caption1 className={s.muted}>
-                  Nothing yet -- new messages sent in this chat will appear here as they arrive.
-                </Caption1>
-              )}
+              {events.length === 0 && <Caption1 className={s.muted}>{t("botView.nothingYet")}</Caption1>}
               {events.map((ev, i) => (
                 <div key={i} style={{ display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
@@ -139,40 +130,35 @@ export default function BotViewPage() {
             </div>
           </Section>
 
-          <Section title="Reply as the bot">
+          <Section title={t("botView.replyAsBot")}>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <MessageBar intent="warning">
-                <MessageBarBody>
-                  Anything sent below is posted as the bot itself -- real users see it exactly like an automated
-                  reply, with no way to tell it came from here.
-                </MessageBarBody>
+                <MessageBarBody>{t("botView.replyWarning")}</MessageBarBody>
               </MessageBar>
               <Textarea
-                aria-label="Message to send as the bot"
-                placeholder="Type a message to send as the bot..."
+                aria-label={t("botView.messageLabel")}
+                placeholder={t("botView.messagePlaceholder")}
                 value={draft}
                 onChange={(_, data) => setDraft(data.value)}
                 resize="vertical"
               />
               {send.error && (
                 <MessageBar intent="error">
-                  <MessageBarBody>{errorMessage(send.error, "Failed to send.")}</MessageBarBody>
+                  <MessageBarBody>{errorMessage(send.error, t("botView.sendFailed"))}</MessageBarBody>
                 </MessageBar>
               )}
               <Dialog open={confirmOpen} onOpenChange={(_, data) => setConfirmOpen(data.open)}>
                 <DialogTrigger disableButtonEnhancement>
                   <Button appearance="primary" disabled={draft.trim().length === 0}>
-                    Send as bot...
+                    {t("botView.sendAsBot")}
                   </Button>
                 </DialogTrigger>
                 <DialogSurface>
                   <DialogBody>
-                    <DialogTitle>Send this as the bot?</DialogTitle>
+                    <DialogTitle>{t("botView.confirmTitle")}</DialogTitle>
                     <DialogContent>
                       <Body1>
-                        This will be posted in <strong>{selectedChat?.title ?? selectedChat?.native_chat_id}</strong>{" "}
-                        exactly as if the bot sent it automatically -- real users won&apos;t be able to tell it came
-                        from you.
+                        {t("botView.confirmBody", { chat: selectedChat?.title ?? selectedChat?.native_chat_id ?? "" })}
                       </Body1>
                       <div
                         style={{
@@ -188,10 +174,10 @@ export default function BotViewPage() {
                     </DialogContent>
                     <DialogActions>
                       <Button appearance="secondary" onClick={() => setConfirmOpen(false)}>
-                        Cancel
+                        {t("botView.cancel")}
                       </Button>
                       <Button appearance="primary" disabled={send.isPending} onClick={doSend}>
-                        {send.isPending ? "Sending..." : "Send"}
+                        {send.isPending ? t("botView.sending") : t("botView.send")}
                       </Button>
                     </DialogActions>
                   </DialogBody>

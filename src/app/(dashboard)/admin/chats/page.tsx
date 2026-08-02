@@ -2,6 +2,7 @@
 
 import { useChats } from "@/hooks/useAdminDirectory";
 import { clickableRowProps, PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import {
   Badge,
   SearchBox,
@@ -28,27 +29,31 @@ export default function AdminChatsPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Chats"
-        description="Every chat the bot has ever seen a message in, bot-wide (not just chats you administer)."
-      />
+      <PageHeader title={t("adminChats.title")} description={t("adminChats.description")} />
 
-      {isPending && <Spinner label="Loading chats..." />}
-      {isError && <Section title="Chats">Failed to load chats.</Section>}
+      {isPending && <Spinner label={t("adminChats.loading")} />}
+      {isError && <Section title={t("adminChats.title")}>{t("adminChats.loadFailed")}</Section>}
 
       {rows && (
         <Section
-          title={`${rows.length} chat${rows.length === 1 ? "" : "s"}`}
-          action={<SearchBox aria-label="Filter chats" placeholder="Filter" value={query} onChange={(_, d) => setQuery(d.value ?? "")} />}
+          title={rows.length === 1 ? t("adminChats.countOne") : t("adminChats.countOther", { count: rows.length })}
+          action={
+            <SearchBox
+              aria-label={t("adminChats.filterLabel")}
+              placeholder={t("adminChats.filterPlaceholder")}
+              value={query}
+              onChange={(_, d) => setQuery(d.value ?? "")}
+            />
+          }
         >
-          <Table size="small" aria-label="Chats">
+          <Table size="small" aria-label={t("adminChats.tableLabel")}>
             <TableHeader>
               <TableRow>
-                <TableHeaderCell>Chat</TableHeaderCell>
-                <TableHeaderCell>Platform</TableHeaderCell>
-                <TableHeaderCell>Members</TableHeaderCell>
-                <TableHeaderCell>Messages</TableHeaderCell>
-                <TableHeaderCell>Digest</TableHeaderCell>
+                <TableHeaderCell>{t("adminChats.columnChat")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminChats.columnPlatform")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminChats.columnMembers")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminChats.columnMessages")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminChats.columnDigest")}</TableHeaderCell>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -70,7 +75,7 @@ export default function AdminChatsPage() {
                   <TableCell>{chat.message_count.toLocaleString()}</TableCell>
                   <TableCell>
                     <Badge appearance="tint" color={chat.digest_enabled ? "success" : "informative"} shape="square">
-                      {chat.digest_enabled ? "On" : "Off"}
+                      {chat.digest_enabled ? t("adminChats.digestOn") : t("adminChats.digestOff")}
                     </Badge>
                   </TableCell>
                 </TableRow>

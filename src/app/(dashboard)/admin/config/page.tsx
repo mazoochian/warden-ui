@@ -3,6 +3,7 @@
 import { RecentChanges } from "@/components/RecentChanges";
 import { ConfigEntry, useAdminConfig, useSetConfigValue } from "@/hooks/useAdminConfig";
 import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import { Badge, Body1, Button, Input, Spinner, Text, tokens } from "@fluentui/react-components";
 import { useState } from "react";
 
@@ -19,7 +20,7 @@ function DynamicRow({ entry }: { entry: ConfigEntry }) {
         <Text weight="semibold">{entry.label}</Text>
         {entry.is_override && (
           <Badge appearance="tint" color="brand" shape="square" style={{ marginLeft: tokens.spacingHorizontalXS }}>
-            overridden
+            {t("adminConfig.overridden")}
           </Badge>
         )}
       </div>
@@ -31,7 +32,7 @@ function DynamicRow({ entry }: { entry: ConfigEntry }) {
           disabled={!dirty || setValue.isPending}
           onClick={() => setValue.mutate({ key: entry.key, value: draft })}
         >
-          Save
+          {t("adminConfig.save")}
         </Button>
       </div>
     </div>
@@ -59,17 +60,14 @@ export default function AdminConfigPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Config"
-        description="Live-editable settings, plus confirmation of which secrets are set (never shown in full)."
-      />
+      <PageHeader title={t("adminConfig.title")} description={t("adminConfig.description")} />
 
-      {isPending && <Spinner label="Loading config..." />}
-      {isError && <Section title="Config">Failed to load config.</Section>}
+      {isPending && <Spinner label={t("adminConfig.loading")} />}
+      {isError && <Section title={t("adminConfig.title")}>{t("adminConfig.loadFailed")}</Section>}
 
       {data && (
         <>
-          <Section title="Live settings">
+          <Section title={t("adminConfig.liveSettings")}>
             <div>
               {dynamicEntries.map((e) => (
                 <DynamicRow key={e.key} entry={e} />
@@ -77,8 +75,8 @@ export default function AdminConfigPage() {
             </div>
           </Section>
 
-          <Section title="Secrets">
-            <Body1 className={s.muted}>Masked, read-only -- change these in the deployment&apos;s .env and restart.</Body1>
+          <Section title={t("adminConfig.secrets")}>
+            <Body1 className={s.muted}>{t("adminConfig.secretsHint")}</Body1>
             <div>
               {secretEntries.map((e) => (
                 <SecretRow key={e.key} entry={e} />

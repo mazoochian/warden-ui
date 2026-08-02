@@ -2,6 +2,7 @@
 
 import { useIdentities } from "@/hooks/useAdminDirectory";
 import { clickableRowProps, PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import {
   Badge,
   SearchBox,
@@ -20,7 +21,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 function formatLastSeen(seconds: number | null) {
-  return seconds ? new Date(seconds * 1000).toLocaleString() : "never";
+  return seconds ? new Date(seconds * 1000).toLocaleString() : t("adminIdentities.never");
 }
 
 export default function AdminIdentitiesPage() {
@@ -33,24 +34,31 @@ export default function AdminIdentitiesPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader title="Users" description="Every real person the bot has seen, bot-wide (excludes bot accounts)." />
+      <PageHeader title={t("adminIdentities.title")} description={t("adminIdentities.description")} />
 
-      {isPending && <Spinner label="Loading users..." />}
-      {isError && <Section title="Users">Failed to load users.</Section>}
+      {isPending && <Spinner label={t("adminIdentities.loading")} />}
+      {isError && <Section title={t("adminIdentities.title")}>{t("adminIdentities.loadFailed")}</Section>}
 
       {rows && (
         <Section
-          title={`${rows.length} user${rows.length === 1 ? "" : "s"}`}
-          action={<SearchBox aria-label="Filter users" placeholder="Filter" value={query} onChange={(_, d) => setQuery(d.value ?? "")} />}
+          title={rows.length === 1 ? t("adminIdentities.countOne") : t("adminIdentities.countOther", { count: rows.length })}
+          action={
+            <SearchBox
+              aria-label={t("adminIdentities.filterLabel")}
+              placeholder={t("adminIdentities.filterPlaceholder")}
+              value={query}
+              onChange={(_, d) => setQuery(d.value ?? "")}
+            />
+          }
         >
-          <Table size="small" aria-label="Users">
+          <Table size="small" aria-label={t("adminIdentities.tableLabel")}>
             <TableHeader>
               <TableRow>
-                <TableHeaderCell>User</TableHeaderCell>
-                <TableHeaderCell>Platform</TableHeaderCell>
-                <TableHeaderCell>Credits</TableHeaderCell>
-                <TableHeaderCell>Last seen</TableHeaderCell>
-                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>{t("adminIdentities.columnUser")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminIdentities.columnPlatform")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminIdentities.columnCredits")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminIdentities.columnLastSeen")}</TableHeaderCell>
+                <TableHeaderCell>{t("adminIdentities.columnStatus")}</TableHeaderCell>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -74,12 +82,12 @@ export default function AdminIdentitiesPage() {
                   <TableCell>
                     {identity.is_bot_admin && (
                       <Badge appearance="filled" color="brand" shape="square" style={{ marginRight: tokens.spacingHorizontalXS }}>
-                        Bot admin
+                        {t("adminIdentities.botAdmin")}
                       </Badge>
                     )}
                     {identity.is_allowed && (
                       <Badge appearance="tint" shape="square">
-                        Allowed
+                        {t("adminIdentities.allowed")}
                       </Badge>
                     )}
                   </TableCell>
