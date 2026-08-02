@@ -62,18 +62,18 @@ import { ThemeToggle } from "./ThemeToggle";
 const NAV_COLLAPSE_KEY = "warden-ui-nav-collapsed";
 
 const useStyles = makeStyles({
+  // Mica-like window backdrop; the content layer floats on top of it.
   root: { display: "flex", minHeight: "100vh", backgroundColor: tokens.colorNeutralBackground3 },
   nav: {
     width: "252px",
     flexShrink: 0,
-    backgroundColor: tokens.colorNeutralBackground1,
-    ...shorthands.borderRight("1px", "solid", tokens.colorNeutralStroke2),
+    backgroundColor: "transparent",
     display: "flex",
     flexDirection: "column",
     position: "sticky",
     top: 0,
     height: "100vh",
-    transition: "width 140ms ease",
+    transition: "width 180ms cubic-bezier(0.16, 1, 0.3, 1)",
     overflowX: "hidden",
   },
   navCollapsed: { width: "60px" },
@@ -81,9 +81,8 @@ const useStyles = makeStyles({
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    height: "52px",
-    ...shorthands.padding("0", "12px"),
-    ...shorthands.borderBottom("1px", "solid", tokens.colorNeutralStroke2),
+    height: "48px",
+    ...shorthands.padding("0", "14px"),
     flexShrink: 0,
   },
   brandMark: {
@@ -91,77 +90,88 @@ const useStyles = makeStyles({
     height: "26px",
     flexShrink: 0,
   },
-  navScroll: { overflowY: "auto", flexGrow: 1, ...shorthands.padding("8px", "8px", "16px") },
+  navScroll: { overflowY: "auto", flexGrow: 1, ...shorthands.padding("4px", "6px", "16px") },
+  // WinUI 3 NavigationView item: 36px, 4px radius, animated left pill indicator.
   navItem: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
+    gap: "12px",
     height: "36px",
-    ...shorthands.padding("0", "10px"),
-    borderRadius: tokens.borderRadiusSmall,
+    marginBottom: "2px",
+    ...shorthands.padding("0", "12px"),
+    borderRadius: tokens.borderRadiusMedium,
     color: tokens.colorNeutralForeground1,
     textDecorationLine: "none",
     fontSize: tokens.fontSizeBase300,
     whiteSpace: "nowrap",
     position: "relative",
-    ":hover": { backgroundColor: tokens.colorNeutralBackground2Hover },
+    transition: "background-color 100ms ease",
+    ":hover": { backgroundColor: tokens.colorSubtleBackgroundHover },
+    ":active": { backgroundColor: tokens.colorSubtleBackgroundPressed },
   },
   navItemActive: {
-    backgroundColor: tokens.colorBrandBackground2,
-    color: tokens.colorBrandForeground2,
+    backgroundColor: tokens.colorSubtleBackgroundSelected,
+    color: tokens.colorNeutralForeground1,
     fontWeight: tokens.fontWeightSemibold,
     "::before": {
       content: '""',
       position: "absolute",
-      left: 0,
-      top: "7px",
-      bottom: "7px",
+      left: "1px",
+      top: "50%",
+      transform: "translateY(-50%)",
+      height: "16px",
       width: "3px",
+      borderRadius: tokens.borderRadiusCircular,
       backgroundColor: tokens.colorBrandStroke1,
     },
-    ":hover": { backgroundColor: tokens.colorBrandBackground2 },
+    ":hover": { backgroundColor: tokens.colorSubtleBackgroundHover },
   },
   category: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
+    gap: "12px",
     height: "36px",
     width: "100%",
-    ...shorthands.padding("0", "10px"),
+    marginBottom: "2px",
+    ...shorthands.padding("0", "12px"),
     ...shorthands.border("none"),
     backgroundColor: "transparent",
     color: tokens.colorNeutralForeground1,
     cursor: "pointer",
-    borderRadius: tokens.borderRadiusSmall,
+    borderRadius: tokens.borderRadiusMedium,
     fontSize: tokens.fontSizeBase300,
     fontFamily: tokens.fontFamilyBase,
-    ":hover": { backgroundColor: tokens.colorNeutralBackground2Hover },
+    ":hover": { backgroundColor: tokens.colorSubtleBackgroundHover },
   },
-  sub: { paddingLeft: "22px" },
+  sub: { paddingLeft: "26px" },
   groupLabel: {
     display: "block",
-    ...shorthands.padding("14px", "10px", "4px"),
+    ...shorthands.padding("14px", "12px", "4px"),
     color: tokens.colorNeutralForeground4,
-    textTransform: "uppercase",
-    letterSpacing: "0.6px",
+    fontWeight: tokens.fontWeightSemibold,
   },
   main: { flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column" },
+  // Title bar sits on the mica backdrop, not on the content layer.
   topbar: {
-    height: "52px",
+    height: "48px",
     flexShrink: 0,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: "12px",
-    ...shorthands.padding("0", "16px"),
-    backgroundColor: tokens.colorNeutralBackground1,
-    ...shorthands.borderBottom("1px", "solid", tokens.colorNeutralStroke2),
-    position: "sticky",
-    top: 0,
-    zIndex: 10,
-    boxShadow: tokens.shadow2,
+    ...shorthands.padding("0", "16px", "0", "4px"),
+    backgroundColor: "transparent",
   },
-  content: { ...shorthands.padding("24px"), flexGrow: 1 },
+  // WinUI 3 content layer: solid surface, hairline stroke, 8px top-left corner.
+  layer: {
+    flexGrow: 1,
+    backgroundColor: tokens.colorNeutralBackground1,
+    ...shorthands.borderTop("1px", "solid", tokens.colorNeutralStroke2),
+    ...shorthands.borderLeft("1px", "solid", tokens.colorNeutralStroke2),
+    borderTopLeftRadius: tokens.borderRadiusXLarge,
+    overflowX: "hidden",
+  },
+  content: { ...shorthands.padding("24px", "28px", "32px"), flexGrow: 1 },
   spread: { display: "flex", alignItems: "center", gap: "8px" },
 });
 
@@ -233,8 +243,13 @@ function NavItem({ item, collapsed, sub }: { item: NavLeaf; collapsed: boolean; 
  * care which phase built the destination, it just navigates.
  *
  * Visual design (collapsible grouped nav, active accent bar, filled/
- * regular icon swap, sticky topbar) ported from the design reference at
- * github.com/mazoochian/warden-control-hub (2026-07-28).
+ * regular icon swap, mica-backdrop shell with a rounded content layer)
+ * ported from the design reference at github.com/mazoochian/warden-control-hub
+ * (2026-07-28, updated to its "Fluent 2 UI" pass 2026-08-02): the nav and
+ * topbar sit transparently on the `root` mica backdrop rather than being
+ * their own bordered/sticky surfaces, and page content lives inside a
+ * separate `layer` div -- a solid surface with a single rounded top-left
+ * corner, the WinUI 3 NavigationView pattern.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const s = useStyles();
@@ -357,7 +372,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Menu>
           </div>
         </header>
-        <main className={s.content}>{children}</main>
+        <div className={s.layer}>
+          <main className={s.content}>{children}</main>
+        </div>
       </div>
     </div>
   );

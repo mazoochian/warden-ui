@@ -1,11 +1,11 @@
 import { createLightTheme, createDarkTheme, type BrandVariants, type Theme } from "@fluentui/react-components";
 
 /**
- * Saturated teal-cyan "guardian" brand ramp, sharpened corners (small
- * radii instead of Fluent's default pill-ish rounding) -- ported from
- * the design reference at github.com/mazoochian/warden-control-hub
- * (2026-07-28), which independently arrived at the same "Fluent UI +
- * custom brand" approach this app already uses, just more polished.
+ * Saturated teal-cyan "guardian" brand ramp -- ported from the design
+ * reference at github.com/mazoochian/warden-control-hub (2026-07-28,
+ * updated to its "Fluent 2 UI" pass 2026-08-02), which independently
+ * arrived at the same "Fluent UI + custom brand" approach this app
+ * already uses, just more polished.
  */
 export const wardenBrand: BrandVariants = {
   10: "#001417",
@@ -26,17 +26,27 @@ export const wardenBrand: BrandVariants = {
   160: "#DEF8FF",
 };
 
-const sharpen = (theme: Theme): Theme => ({
+// Fluent 2 / WinUI 3 corner radii: 4px controls, 8px surfaces & flyouts.
+const fluent2 = (theme: Theme): Theme => ({
   ...theme,
-  borderRadiusSmall: "2px",
-  borderRadiusMedium: "3px",
-  borderRadiusLarge: "4px",
-  borderRadiusXLarge: "6px",
+  borderRadiusNone: "0",
+  borderRadiusSmall: "3px",
+  borderRadiusMedium: "4px",
+  borderRadiusLarge: "7px",
+  borderRadiusXLarge: "8px",
+  borderRadiusCircular: "10000px",
 });
 
-export const wardenLightTheme = sharpen(createLightTheme(wardenBrand));
+/** Mica-like window backdrop colors used behind the content layer. */
+export const micaLight = "#f3f3f3";
+export const micaDark = "#202020";
+/** WinUI 3 content layer ("Solid background base"). */
+export const layerLight = "#ffffff";
+export const layerDark = "#272727";
 
-export const wardenDarkTheme = sharpen({
+export const wardenLightTheme = fluent2(createLightTheme(wardenBrand));
+
+export const wardenDarkTheme = fluent2({
   ...createDarkTheme(wardenBrand),
   colorBrandForeground1: wardenBrand[110],
   colorBrandForeground2: wardenBrand[120],

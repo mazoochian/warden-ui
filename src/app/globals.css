@@ -2,14 +2,17 @@
    owns real theming for everything inside it via Griffel/design tokens.
    This just keeps the very first paint (before React mounts) from
    flashing the wrong background -- `data-theme` is stamped onto <html>
-   by the blocking inline script in layout.tsx before that first paint. */
+   by the blocking inline script in layout.tsx before that first paint.
+   Matches brand-theme.ts's `micaLight`/`micaDark` -- the whole viewport
+   sits on that mica backdrop outside of AppShell's rounded content layer,
+   so this is the color that would otherwise flash, not plain white/black. */
 html[data-theme="light"] {
-  background: #ffffff;
+  background: #f3f3f3;
   color-scheme: light;
 }
 
 html[data-theme="dark"] {
-  background: #292929;
+  background: #202020;
   color-scheme: dark;
 }
 
