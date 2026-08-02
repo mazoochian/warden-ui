@@ -6,8 +6,9 @@ import type { ReactNode } from "react";
 /**
  * Shared layout primitives used across every real page -- ported from the
  * design reference at github.com/mazoochian/warden-control-hub
- * (2026-07-28) rather than each page inventing its own spacing/card
- * conventions, which is what led to the previous, less consistent look.
+ * (2026-07-28, updated to its "Fluent 2 UI" pass 2026-08-02) rather than
+ * each page inventing its own spacing/card conventions, which is what led
+ * to the previous, less consistent look.
  */
 export const useCommonStyles = makeStyles({
   page: {
@@ -28,11 +29,16 @@ export const useCommonStyles = makeStyles({
     gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
     gap: "12px",
   },
+  // Fluent 2 card: 8px radius, hairline stroke, layer background, no heavy shadow.
   tile: {
     ...shorthands.padding("16px"),
     display: "flex",
     flexDirection: "column",
     gap: "2px",
+    borderRadius: tokens.borderRadiusXLarge,
+    backgroundColor: tokens.colorNeutralBackground1,
+    ...shorthands.border("1px", "solid", tokens.colorNeutralStroke2),
+    boxShadow: "none",
   },
   tileValue: {
     fontSize: "30px",
@@ -41,10 +47,14 @@ export const useCommonStyles = makeStyles({
     letterSpacing: "-0.5px",
   },
   section: {
-    ...shorthands.padding("18px"),
+    ...shorthands.padding("20px"),
     display: "flex",
     flexDirection: "column",
     gap: "14px",
+    borderRadius: tokens.borderRadiusXLarge,
+    backgroundColor: tokens.colorNeutralBackground1,
+    ...shorthands.border("1px", "solid", tokens.colorNeutralStroke2),
+    boxShadow: "none",
   },
   sectionHeader: {
     display: "flex",

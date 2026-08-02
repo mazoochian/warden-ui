@@ -265,6 +265,54 @@ rewrite.
   pass on top of everything already working, verified the same way as
   every other phase (`npm run build` + `npm run lint` clean throughout).
 
+## Phase 4.6 — Fluent 2 UI follow-up
+*Effort: S. Dependencies: Phase 4.5. Status (2026-08-02): done. Inserted
+the same way 4.5 was — Armin pushed a follow-up commit to the design
+reference and asked for it ported, not originally planned.*
+
+The design reference (github.com/mazoochian/warden-control-hub) gained a
+new commit, "Updated to Fluent 2 UI" (`64f6ba0`), refining the mica-window/
+WinUI-3 look Phase 4.5's port only partially had. Diff was genuinely small
+— 4 files, ~160 lines — confirmed by fetching the reference repo directly
+and diffing against the commit Phase 4.5 had ported.
+
+- `brand-theme.ts`: renamed the corner-radius helper `sharpen` → `fluent2`
+  and widened it to the real WinUI 3 scale (4px controls / 8px surfaces:
+  `borderRadiusSmall` 3px, `Medium` 4px, `Large` 7px, `XLarge` 8px, plus
+  `None`/`Circular`). New `micaLight`/`micaDark` (`#f3f3f3`/`#202020`,
+  the window backdrop) and `layerLight`/`layerDark` (`#ffffff`/`#272727`,
+  the content surface) exported constants.
+- `AppShell`: `nav`/`topbar` are now transparent, floating directly on the
+  `root` mica backdrop instead of being their own bordered/sticky
+  surfaces; page content moved into a new `layer` wrapper div — a solid
+  surface with only a top+left hairline stroke and a single
+  `borderTopLeftRadius: borderRadiusXLarge` corner, the actual "curved
+  container like newer Windows apps" look. Nav active-item indicator
+  changed from a full-height inset bar to a short centered rounded pill;
+  hover/pressed/selected colors moved to Fluent's `colorSubtleBackground*`
+  token family instead of the brand-tinted one Phase 4.5 used.
+- `ui-kit.tsx`: `StatTile`/`Section` (both built on Fluent's `<Card>`)
+  gained an explicit 8px radius, hairline `colorNeutralStroke2` border,
+  solid `colorNeutralBackground1` fill, and `boxShadow: none` — real
+  "Fluent 2 card" treatment instead of relying on `Card`'s own default
+  elevation.
+- `globals.css`: the pre-hydration flash-prevention background (set by
+  `data-theme` before `FluentProvider` mounts) now matches the new mica
+  constants (`#f3f3f3`/`#202020`) instead of the old, unrelated
+  `#ffffff`/`#292929` guess — the whole viewport sits on the mica backdrop
+  outside of `AppShell`'s rounded layer, so this is the color that would
+  otherwise flash.
+- Verified with `npm run build` + `npm run lint` (both clean), plus an
+  actual browser check this time (headless Chromium via Playwright,
+  dev server + mocked `/api/v1/auth/session`/list endpoints since no
+  backend was running) — screenshotted the Dashboard and Reminders pages
+  in both themes, confirmed the rounded content-layer corner, restyled
+  nav pill, and card-styled tiles/sections all render as intended, and
+  confirmed dark mode via an actual toggle-button click (not just a
+  `data-theme` attribute hack, which turned out to under-report — a real
+  click reactively re-themes correctly).
+- No functional/RBAC/session logic changed, same as Phase 4.5.
+
 ## Phase 5 — Feature-parity forms
 *Effort: XL — the largest phase by raw surface area. Split into three
 sub-phases below rather than one block, so partial progress still ships.
