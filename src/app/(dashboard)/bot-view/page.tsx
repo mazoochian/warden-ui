@@ -114,7 +114,7 @@ export default function BotViewPage() {
                 gap: "10px",
                 maxHeight: "420px",
                 overflowY: "auto",
-                paddingRight: "4px",
+                paddingInlineEnd: "4px",
               }}
             >
               {events.length === 0 && <Caption1 className={s.muted}>{t("botView.nothingYet")}</Caption1>}

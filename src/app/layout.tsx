@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { themeInitScript } from "./theme";
+import { dir, locale } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "warden",
@@ -14,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} dir={dir} suppressHydrationWarning>
       <head>
         {/* Must run synchronously before first paint to avoid a flash of
             the wrong theme -- see theme.tsx's doc comment on why this is

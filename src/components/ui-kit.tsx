@@ -79,8 +79,10 @@ export const useCommonStyles = makeStyles({
   muted: { color: tokens.colorNeutralForeground3 },
   clickableRow: { cursor: "pointer" },
   accentBar: {
-    ...shorthands.borderLeft("3px", "solid", tokens.colorBrandStroke1),
-    paddingLeft: "10px",
+    borderInlineStartWidth: "3px",
+    borderInlineStartStyle: "solid",
+    borderInlineStartColor: tokens.colorBrandStroke1,
+    paddingInlineStart: "10px",
   },
 });
 

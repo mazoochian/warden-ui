@@ -19,7 +19,7 @@ function DynamicRow({ entry }: { entry: ConfigEntry }) {
       <div style={{ flex: 1 }}>
         <Text weight="semibold">{entry.label}</Text>
         {entry.is_override && (
-          <Badge appearance="tint" color="brand" shape="square" style={{ marginLeft: tokens.spacingHorizontalXS }}>
+          <Badge appearance="tint" color="brand" shape="square" style={{ marginInlineStart: tokens.spacingHorizontalXS }}>
             {t("adminConfig.overridden")}
           </Badge>
         )}

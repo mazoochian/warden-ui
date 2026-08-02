@@ -20,15 +20,31 @@ import { en } from "./en";
  * here -- see `ROADMAP.md` Phase 7's own note on exactly what did and
  * didn't get converted to use this.
  *
- * RTL itself is a separate, still-open follow-up: swapping in a Persian
- * `dir="rtl"` document needs Fluent's own RTL support enabled
- * (`FluentProvider`'s `dir` prop) *and* an audit of any hardcoded
- * `left`/`right`/`marginLeft`/etc. CSS in this codebase that should be
- * logical properties (`insetInlineStart`/`marginInlineStart`/...)
- * instead -- not attempted here, see the ROADMAP entry for what's known
- * to need it.
+ * RTL groundwork itself (this file's `dir` export below, threaded into
+ * `FluentProvider` and the root `<html>` element, plus the logical-CSS
+ * audit `ROADMAP.md` mapped out) is now done. What's still missing is the
+ * actual second locale/switcher described above -- `dir` only ever
+ * resolves to `"ltr"` today since `locale` is hardcoded, so none of this
+ * can be exercised end-to-end yet.
  */
 export type I18nKey = keyof typeof en;
+
+/**
+ * The active locale, hardcoded until real locale switching exists (see
+ * this file's doc comment above). `dir` is derived from it via the same
+ * `fa`/`fa-IR` heuristic `user_settings.zig` already uses server-side --
+ * consumed by `app/providers.tsx` (`FluentProvider`'s `dir` prop) and
+ * `app/layout.tsx` (the root `<html>` element's own `dir` attribute) so
+ * both Fluent's RTL styling and native browser behavior (scrollbars, form
+ * controls) follow whichever locale is active, once one actually is.
+ * Since `locale` never changes today, this is groundwork, not a working
+ * switch.
+ */
+export const locale = "en";
+
+const rtlLocales = new Set(["fa", "fa-IR"]);
+
+export const dir: "ltr" | "rtl" = rtlLocales.has(locale) ? "rtl" : "ltr";
 
 /**
  * Looks up `key` in the active strings table (today, always `en`) and
