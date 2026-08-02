@@ -2,18 +2,19 @@
 
 import { MySettings, useMySettings, useSetMySettings } from "@/hooks/useMySettings";
 import { PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import { Button, Field, Input, Spinner } from "@fluentui/react-components";
 import { useState } from "react";
 
 const dateFormats: { value: MySettings["date_format"]; label: string }[] = [
-  { value: "mdy", label: "M/D/Y" },
-  { value: "dmy", label: "D/M/Y" },
-  { value: "ymd", label: "Y-M-D" },
+  { value: "mdy", label: t("settings.dateFormatMdy") },
+  { value: "dmy", label: t("settings.dateFormatDmy") },
+  { value: "ymd", label: t("settings.dateFormatYmd") },
 ];
 
 const timeFormats: { value: MySettings["time_format"]; label: string }[] = [
-  { value: "h24", label: "24h" },
-  { value: "h12", label: "12h (AM/PM)" },
+  { value: "h24", label: t("settings.timeFormatH24") },
+  { value: "h12", label: t("settings.timeFormatH12") },
 ];
 
 function formatOffset(minutes: number) {
@@ -52,22 +53,22 @@ function SettingsForm({ initial }: { initial: MySettings }) {
   };
 
   return (
-    <Section title="Timezone & formatting">
+    <Section title={t("settings.timezoneFormatting")}>
       <Field
-        label="UTC offset"
-        hint="Signed hours[:minutes], e.g. +3:30, -5, +0."
+        label={t("settings.utcOffset")}
+        hint={t("settings.utcOffsetHint")}
         validationState={offsetInvalid ? "error" : "none"}
-        validationMessage={offsetInvalid ? "Couldn't parse that offset." : undefined}
+        validationMessage={offsetInvalid ? t("settings.utcOffsetError") : undefined}
       >
         <Input value={offsetText} onChange={(_, d) => setOffsetText(d.value)} />
       </Field>
 
-      <Field label="Date format">
-        <ToggleButtonGroup ariaLabel="Date format" value={dateFormat} options={dateFormats} onChange={setDateFormat} />
+      <Field label={t("settings.dateFormat")}>
+        <ToggleButtonGroup ariaLabel={t("settings.dateFormat")} value={dateFormat} options={dateFormats} onChange={setDateFormat} />
       </Field>
 
-      <Field label="Time format">
-        <ToggleButtonGroup ariaLabel="Time format" value={timeFormat} options={timeFormats} onChange={setTimeFormat} />
+      <Field label={t("settings.timeFormat")}>
+        <ToggleButtonGroup ariaLabel={t("settings.timeFormat")} value={timeFormat} options={timeFormats} onChange={setTimeFormat} />
       </Field>
 
       <Button
@@ -76,7 +77,7 @@ function SettingsForm({ initial }: { initial: MySettings }) {
         onClick={save}
         style={{ alignSelf: "flex-start" }}
       >
-        Save
+        {t("settings.save")}
       </Button>
     </Section>
   );
@@ -88,13 +89,10 @@ export default function SettingsPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Personal Settings"
-        description="Your reminder timezone (a fixed UTC offset -- see ARCHITECTURE.md for why not a real IANA zone) and how dates get formatted when Warden shows them to you."
-      />
+      <PageHeader title={t("settings.title")} description={t("settings.description")} />
 
-      {isPending && <Spinner label="Loading settings..." />}
-      {isError && <Section title="Settings">Failed to load settings.</Section>}
+      {isPending && <Spinner label={t("settings.loading")} />}
+      {isError && <Section title={t("settings.title")}>{t("settings.loadFailed")}</Section>}
       {data && <SettingsForm key={JSON.stringify(data)} initial={data} />}
     </div>
   );

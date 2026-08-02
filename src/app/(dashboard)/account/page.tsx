@@ -3,6 +3,7 @@
 import { useInvalidateSession } from "@/hooks/useSession";
 import { SessionListItem, useRevokeSession, useSessions } from "@/hooks/useSessions";
 import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import {
   Badge,
   Button,
@@ -41,10 +42,10 @@ function SessionRow({ session }: { session: SessionListItem }) {
     <TableRow>
       <TableCell>
         <TableCellLayout media={<DesktopRegular />}>
-          {session.user_agent ?? "Unknown device"}
+          {session.user_agent ?? t("account.unknownDevice")}
           {session.current && (
             <Badge appearance="filled" color="brand" style={{ marginLeft: tokens.spacingHorizontalS }}>
-              This device
+              {t("account.thisDevice")}
             </Badge>
           )}
         </TableCellLayout>
@@ -59,7 +60,7 @@ function SessionRow({ session }: { session: SessionListItem }) {
           onClick={handleRevoke}
           disabled={revoke.isPending}
         >
-          {session.current ? "Log out" : "Revoke"}
+          {session.current ? t("account.logOut") : t("account.revoke")}
         </Button>
       </TableCell>
     </TableRow>
@@ -72,22 +73,19 @@ export default function AccountPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Account & Sessions"
-        description="Every browser currently signed in to your account. Revoking a session ends it immediately, wherever it is."
-      />
+      <PageHeader title={t("account.title")} description={t("account.description")} />
 
-      {isPending && <Spinner label="Loading sessions..." />}
-      {isError && <Section title="Sessions">Failed to load sessions.</Section>}
+      {isPending && <Spinner label={t("account.loading")} />}
+      {isError && <Section title={t("account.title")}>{t("account.loadFailed")}</Section>}
 
       {data && (
-        <Section title={`${data.items.length} active session${data.items.length === 1 ? "" : "s"}`}>
+        <Section title={data.items.length === 1 ? t("account.sessionCountOne") : t("account.sessionCountOther", { count: data.items.length })}>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHeaderCell>Device</TableHeaderCell>
-                <TableHeaderCell>Signed in</TableHeaderCell>
-                <TableHeaderCell>Expires</TableHeaderCell>
+                <TableHeaderCell>{t("account.columnDevice")}</TableHeaderCell>
+                <TableHeaderCell>{t("account.columnSignedIn")}</TableHeaderCell>
+                <TableHeaderCell>{t("account.columnExpires")}</TableHeaderCell>
                 <TableHeaderCell></TableHeaderCell>
               </TableRow>
             </TableHeader>
