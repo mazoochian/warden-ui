@@ -606,28 +606,38 @@ member/target lookups reused for "who am I sending to").*
     same limitation every other placeholder string in this table already
     has, so this just makes that one page consistent with the rest rather
     than reaching for something new. **Every page in the app is now
-    converted** — the only i18n-shaped item left on this file is RTL
-    itself (`dir="rtl"` wiring + the logical-CSS-properties migration
-    listed above), still fully unaddressed. Verified: `npm run lint` and
-    `npm run build` both clean.
-  - **RTL groundwork, not attempted, needs flagging for later** (per
-    `ARCHITECTURE.md` §9's own "pick it up later without a rewrite, not a
-    blocker now" framing): a grep for hardcoded physical-direction CSS
-    across `src/` turned up several spots that would need to become
-    logical properties (`insetInlineStart`/`marginInlineStart`/
-    `paddingInlineStart`/`borderInlineStart`/`borderStartStartRadius`/etc.)
-    for a real RTL layout: `AppShell.tsx`'s `useStyles` — the nav active-
-    item accent pill (`left: "1px"` in `navItemActive`'s `::before`), the
-    sub-nav indent (`sub: { paddingLeft: "26px" }`), and the content
-    `layer`'s hairline stroke + rounded corner (`shorthands.borderLeft`,
-    `borderTopLeftRadius`); `ui-kit.tsx`'s `accentBar` helper
-    (`shorthands.borderLeft` + `paddingLeft`); `bot-view/page.tsx`'s live-
-    feed scroll container (`paddingRight: "4px"`, inline style); and
-    `marginLeft`/`marginRight` inline styles on a handful of `Badge`s next
-    to text (`account/page.tsx`, `admin/config/page.tsx`,
-    `admin/identities/page.tsx`). None of this was changed — `dir="rtl"`
-    isn't wired into `FluentProvider` anywhere yet either — this is purely
-    the map of what a real RTL pass would need to touch first.
+    converted**; RTL groundwork (`dir` wiring + the logical-CSS-properties
+    migration) is done too as of the same day — see below. Verified:
+    `npm run lint` and `npm run build` both clean.
+  - **RTL groundwork — done (2026-08-02)**, closing out the map above:
+    every spot it named converted to logical CSS properties —
+    `AppShell.tsx`'s nav active-item accent pill (`left` →
+    `insetInlineStart`), sub-nav indent (`paddingLeft` →
+    `paddingInlineStart`), and the content `layer`'s hairline stroke +
+    rounded corner (`shorthands.borderLeft`/`borderTopLeftRadius` →
+    `borderInlineStartWidth`/`Style`/`Color` longhands +
+    `borderStartStartRadius` — Griffel's own types ban the
+    `borderInlineStart` shorthand, longhands are required);
+    `ui-kit.tsx`'s `accentBar` helper (same longhand treatment);
+    `bot-view/page.tsx`'s live-feed scroll padding (`paddingRight` →
+    `paddingInlineEnd`); and the `marginLeft`/`marginRight` Badge styles
+    in `account/page.tsx`/`admin/config/page.tsx` (→
+    `marginInlineStart`, badge follows text) and
+    `admin/identities/page.tsx` (→ `marginInlineEnd`, badge precedes
+    another badge). Also new: `src/lib/i18n/index.ts` exports `locale`
+    (hardcoded `"en"` for now) and a `dir: "ltr" | "rtl"` derived from it
+    via the same `fa`/`fa-IR` heuristic `user_settings.zig` already uses
+    server-side, threaded into `FluentProvider`'s `dir` prop
+    (`app/providers.tsx`) and the root `<html>` element's `dir`/`lang`
+    attributes (`app/layout.tsx`) so both Fluent's RTL styling and native
+    browser chrome (scrollbars, form controls) would follow a real RTL
+    locale once one exists. **Still open, deliberately not attempted
+    here**: an actual second locale (a `fa.ts` strings table) and any
+    locale-switcher UI — `dir` only ever resolves to `"ltr"` today, so
+    none of this is exercised end-to-end yet, it's groundwork the next
+    real locale can build on without a CSS rewrite. Verified: `npm run
+    lint` and `npm run build` both clean; visually identical in the
+    default English/ltr case, as expected for a groundwork-only pass.
 
 ## Phase 8 — Notes (feature parity)
 *Effort: S. Dependencies: Phase 5a (same identity-scoped-list pattern).

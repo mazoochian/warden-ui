@@ -81,7 +81,7 @@ export default function AdminIdentitiesPage() {
                   <TableCell>{formatLastSeen(identity.last_seen)}</TableCell>
                   <TableCell>
                     {identity.is_bot_admin && (
-                      <Badge appearance="filled" color="brand" shape="square" style={{ marginRight: tokens.spacingHorizontalXS }}>
+                      <Badge appearance="filled" color="brand" shape="square" style={{ marginInlineEnd: tokens.spacingHorizontalXS }}>
                         {t("adminIdentities.botAdmin")}
                       </Badge>
                     )}

@@ -5,11 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { wardenDarkTheme, wardenLightTheme } from "./brand-theme";
 import { ThemeProvider, useTheme } from "./theme";
+import { dir } from "@/lib/i18n";
 
 function FluentThemeBridge({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
   return (
-    <FluentProvider theme={theme === "dark" ? wardenDarkTheme : wardenLightTheme} style={{ minHeight: "100vh" }}>
+    <FluentProvider dir={dir} theme={theme === "dark" ? wardenDarkTheme : wardenLightTheme} style={{ minHeight: "100vh" }}>
       {children}
     </FluentProvider>
   );

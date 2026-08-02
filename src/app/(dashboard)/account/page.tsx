@@ -44,7 +44,7 @@ function SessionRow({ session }: { session: SessionListItem }) {
         <TableCellLayout media={<DesktopRegular />}>
           {session.user_agent ?? t("account.unknownDevice")}
           {session.current && (
-            <Badge appearance="filled" color="brand" style={{ marginLeft: tokens.spacingHorizontalS }}>
+            <Badge appearance="filled" color="brand" style={{ marginInlineStart: tokens.spacingHorizontalS }}>
               {t("account.thisDevice")}
             </Badge>
           )}
