@@ -81,7 +81,7 @@ pages requires a valid session cookie; requests without one get `401`.
 | `PATCH /api/v1/chats/:id/settings` | **Implemented (2026-07-28).** Body is the *whole* settings object, not a sparse partial update (JSON can't cleanly distinguish "field omitted" from "field explicitly null" without a wrapper type, and a settings-form PATCH naturally submits every field anyway) — same effect as `/persona`, `/magicword`, `/thinking`, `/digest`. |
 | `GET /api/v1/chats/:id/members` | **Implemented (2026-07-28).** `chat_members` joined with `identities` for that chat, bots excluded, most-recently-active first. |
 
-## Feature parity — Reminders / Alerts / Watches
+## Feature parity — Reminders / Alerts / Watches / Notes
 
 Scoped to the caller's own identity by default (`?chat_id=` narrows to
 one chat; a bot admin/owner can pass `?identity_id=` to view/manage on
@@ -95,6 +95,9 @@ admin act beyond their own messages).
 | `DELETE /api/v1/reminders/:id` | Same authorization as `/remind cancel` — setter or owner. |
 | `GET/POST/DELETE /api/v1/alerts...` | Same shape, mirroring `/alert`. |
 | `GET/POST/DELETE /api/v1/watches...` | Same shape, mirroring `/watch`. |
+| `GET /api/v1/notes?chat_id=` | **Implemented (2026-08-02).** `{items: [{id, chat_id, chat_title, text, created_at}]}` — mirrors `/note list`/`/notes`, but identity-scoped like Reminders/Alerts/Watches above rather than chat-scoped like the bot's own in-chat `/notes` (which shows every contributor's notes together in that one chat). New `notes.NoteForIdentity`/`notes.listForIdentity` in warden's store layer, added alongside this endpoint since warden's Phase 11 (`ROADMAP.md`) only shipped the chat-scoped `listForChat` the bot commands needed. |
+| `POST /api/v1/notes` | `{chat_id, text, identity_id?}` — mirrors `/note add <text>`. `text` capped at 1000 bytes, same as the command. Gated by the `notes` feature flag (already used bot-side by `/note`/`set_note`; also newly added to `feature_flags.known_modules` so it actually shows up as a toggle on `/admin/modules` — it existed as a gate before this but wasn't listed there). |
+| `DELETE /api/v1/notes/:id` | Same authorization as `/note delete`: whoever added it, or the bot owner — **not** "anyone in the chat" like Watches' removal is. |
 
 ## Feature parity — Convert
 

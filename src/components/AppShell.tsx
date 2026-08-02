@@ -36,6 +36,8 @@ import {
   Key24Filled,
   Key24Regular,
   LineHorizontal320Regular,
+  Note24Filled,
+  Note24Regular,
   People24Filled,
   People24Regular,
   PeopleTeam24Filled,
@@ -188,6 +190,7 @@ const moduleItems: NavLeaf[] = [
   { to: "/reminders", label: t("nav.reminders"), icon: <Clock24Regular />, activeIcon: <Clock24Filled /> },
   { to: "/alerts", label: t("nav.alerts"), icon: <Alert24Regular />, activeIcon: <Alert24Filled /> },
   { to: "/watches", label: t("nav.watches"), icon: <Rss24Regular />, activeIcon: <Rss24Filled /> },
+  { to: "/notes", label: t("nav.notes"), icon: <Note24Regular />, activeIcon: <Note24Filled /> },
   { to: "/convert", label: t("nav.convert"), icon: <DocumentArrowRight24Regular />, activeIcon: <DocumentArrowRight24Filled /> },
   { to: "/moderation", label: t("nav.groupAdministration"), icon: <PeopleTeam24Regular />, activeIcon: <PeopleTeam24Filled /> },
 ];
