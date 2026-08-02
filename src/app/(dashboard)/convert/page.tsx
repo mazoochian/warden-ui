@@ -114,9 +114,25 @@ export default function ConvertPage() {
       />
 
       <Section title="File">
+        {/* A native <label> would be the simplest way to make this
+            click-to-browse, but the file input has to stay reachable for
+            the drag-and-drop handlers below too, so this is a
+            role="button" div instead -- tabIndex + onKeyDown make Enter/
+            Space activate it the same way a real button would, since a
+            plain onClick div (the previous state of this code) is
+            invisible to keyboard-only and screen-reader users entirely. */}
         <div
           className={`${styles.dropzone} ${dragActive ? styles.dropzoneActive : ""}`}
+          role="button"
+          tabIndex={0}
+          aria-label={file ? `Selected file: ${file.name}. Press Enter to choose a different file.` : "Drag a file here, or press Enter to browse for one."}
           onClick={() => inputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
           onDragOver={(e) => {
             e.preventDefault();
             setDragActive(true);
@@ -132,6 +148,8 @@ export default function ConvertPage() {
           <input
             ref={inputRef}
             type="file"
+            tabIndex={-1}
+            aria-hidden="true"
             style={{ display: "none" }}
             onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
           />

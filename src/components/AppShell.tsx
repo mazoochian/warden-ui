@@ -57,6 +57,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { isAdmin, useInvalidateSession, useSession } from "@/hooks/useSession";
+import { t } from "@/lib/i18n";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV_COLLAPSE_KEY = "warden-ui-nav-collapsed";
@@ -184,26 +185,26 @@ interface NavLeaf {
 }
 
 const moduleItems: NavLeaf[] = [
-  { to: "/reminders", label: "Reminders", icon: <Clock24Regular />, activeIcon: <Clock24Filled /> },
-  { to: "/alerts", label: "Alerts", icon: <Alert24Regular />, activeIcon: <Alert24Filled /> },
-  { to: "/watches", label: "Watches", icon: <Rss24Regular />, activeIcon: <Rss24Filled /> },
-  { to: "/convert", label: "Convert", icon: <DocumentArrowRight24Regular />, activeIcon: <DocumentArrowRight24Filled /> },
-  { to: "/moderation", label: "Group Administration", icon: <PeopleTeam24Regular />, activeIcon: <PeopleTeam24Filled /> },
+  { to: "/reminders", label: t("nav.reminders"), icon: <Clock24Regular />, activeIcon: <Clock24Filled /> },
+  { to: "/alerts", label: t("nav.alerts"), icon: <Alert24Regular />, activeIcon: <Alert24Filled /> },
+  { to: "/watches", label: t("nav.watches"), icon: <Rss24Regular />, activeIcon: <Rss24Filled /> },
+  { to: "/convert", label: t("nav.convert"), icon: <DocumentArrowRight24Regular />, activeIcon: <DocumentArrowRight24Filled /> },
+  { to: "/moderation", label: t("nav.groupAdministration"), icon: <PeopleTeam24Regular />, activeIcon: <PeopleTeam24Filled /> },
 ];
 
 const adminItems: NavLeaf[] = [
-  { to: "/admin/chats", label: "Chats", icon: <Chat24Regular />, activeIcon: <Chat24Filled /> },
-  { to: "/admin/identities", label: "Users", icon: <People24Regular />, activeIcon: <People24Filled /> },
-  { to: "/admin/modules", label: "Modules", icon: <PuzzlePiece24Regular />, activeIcon: <PuzzlePiece24Filled /> },
-  { to: "/admin/config", label: "Config", icon: <Key24Regular />, activeIcon: <Key24Filled /> },
-  { to: "/bot-view", label: "Bot View", icon: <Bot24Regular />, activeIcon: <Bot24Filled /> },
-  { to: "/admin/audit-log", label: "Audit Log", icon: <ClipboardTextLtr24Regular />, activeIcon: <ClipboardTextLtr24Filled /> },
+  { to: "/admin/chats", label: t("nav.adminChats"), icon: <Chat24Regular />, activeIcon: <Chat24Filled /> },
+  { to: "/admin/identities", label: t("nav.adminUsers"), icon: <People24Regular />, activeIcon: <People24Filled /> },
+  { to: "/admin/modules", label: t("nav.adminModules"), icon: <PuzzlePiece24Regular />, activeIcon: <PuzzlePiece24Filled /> },
+  { to: "/admin/config", label: t("nav.adminConfig"), icon: <Key24Regular />, activeIcon: <Key24Filled /> },
+  { to: "/bot-view", label: t("nav.botView"), icon: <Bot24Regular />, activeIcon: <Bot24Filled /> },
+  { to: "/admin/audit-log", label: t("nav.adminAuditLog"), icon: <ClipboardTextLtr24Regular />, activeIcon: <ClipboardTextLtr24Filled /> },
 ];
 
-const dashboardItem: NavLeaf = { to: "/", label: "Dashboard", icon: <BoardSplit24Regular />, activeIcon: <BoardSplit24Filled />, exact: true };
-const groupsItem: NavLeaf = { to: "/groups", label: "My Groups", icon: <PeopleTeam24Regular />, activeIcon: <PeopleTeam24Filled /> };
-const settingsItem: NavLeaf = { to: "/settings", label: "Personal Settings", icon: <Settings24Regular />, activeIcon: <Settings24Filled /> };
-const accountItem: NavLeaf = { to: "/account", label: "Account & Sessions", icon: <Person24Regular />, activeIcon: <Person24Filled /> };
+const dashboardItem: NavLeaf = { to: "/", label: t("nav.dashboard"), icon: <BoardSplit24Regular />, activeIcon: <BoardSplit24Filled />, exact: true };
+const groupsItem: NavLeaf = { to: "/groups", label: t("nav.myGroups"), icon: <PeopleTeam24Regular />, activeIcon: <PeopleTeam24Filled /> };
+const settingsItem: NavLeaf = { to: "/settings", label: t("nav.personalSettings"), icon: <Settings24Regular />, activeIcon: <Settings24Filled /> };
+const accountItem: NavLeaf = { to: "/account", label: t("nav.accountSessions"), icon: <Person24Regular />, activeIcon: <Person24Filled /> };
 
 function isActivePath(pathname: string, to: string, exact?: boolean) {
   return exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
@@ -213,7 +214,7 @@ function isActivePath(pathname: string, to: string, exact?: boolean) {
 function currentSectionLabel(pathname: string): string {
   const all = [dashboardItem, groupsItem, ...moduleItems, ...adminItems, settingsItem, accountItem];
   const match = all.find((item) => isActivePath(pathname, item.to, item.exact));
-  return match?.label ?? "Warden";
+  return match?.label ?? t("nav.brand");
 }
 
 function NavItem({ item, collapsed, sub }: { item: NavLeaf; collapsed: boolean; sub?: boolean }) {
@@ -284,15 +285,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     },
   });
 
-  const displayName = session?.authenticated ? session.display_name : "Signed out";
+  const displayName = session?.authenticated ? session.display_name : t("nav.signedOut");
   const sectionLabel = useMemo(() => currentSectionLabel(pathname), [pathname]);
 
   return (
     <div className={s.root}>
-      <nav className={`${s.nav} ${collapsed ? s.navCollapsed : ""}`} aria-label="Main">
+      <nav className={`${s.nav} ${collapsed ? s.navCollapsed : ""}`} aria-label={t("nav.landmark")}>
         <div className={s.brand}>
-          <Image src="/warden-mark.png" alt="Warden" width={26} height={26} className={s.brandMark} priority />
-          {!collapsed && <Text weight="semibold">Warden</Text>}
+          <Image src="/warden-mark.png" alt={t("nav.brandAlt")} width={26} height={26} className={s.brandMark} priority />
+          {!collapsed && <Text weight="semibold">{t("nav.brand")}</Text>}
         </div>
         <div className={s.navScroll}>
           <NavItem item={dashboardItem} collapsed={collapsed} />
@@ -303,11 +304,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           ) : (
             <>
               <Caption1 as="span" className={s.groupLabel}>
-                Modules
+                {t("nav.modulesGroupLabel")}
               </Caption1>
               <button className={s.category} onClick={() => setModulesOpen((o) => !o)} aria-expanded={modulesOpen}>
                 {modulesOpen ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
-                <span>All modules</span>
+                <span>{t("nav.allModules")}</span>
               </button>
               {modulesOpen && moduleItems.map((i) => <NavItem key={i.to} item={i} collapsed={false} sub />)}
             </>
@@ -319,11 +320,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             ) : (
               <>
                 <Caption1 as="span" className={s.groupLabel}>
-                  Admin
+                  {t("nav.adminGroupLabel")}
                 </Caption1>
                 <button className={s.category} onClick={() => setAdminOpen((o) => !o)} aria-expanded={adminOpen}>
                   {adminOpen ? <ChevronDown20Regular /> : <ChevronRight20Regular />}
-                  <span>Bot administration</span>
+                  <span>{t("nav.botAdministration")}</span>
                 </button>
                 {adminOpen && adminItems.map((i) => <NavItem key={i.to} item={i} collapsed={false} sub />)}
               </>
@@ -342,7 +343,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               appearance="subtle"
               icon={<LineHorizontal320Regular />}
               onClick={toggleNav}
-              aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+              aria-label={collapsed ? t("nav.expand") : t("nav.collapse")}
             />
             <Text weight="semibold">{sectionLabel}</Text>
           </div>
@@ -365,7 +366,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <MenuPopover>
                 <MenuList>
                   <MenuItem icon={<SignOut20Regular />} onClick={() => logout.mutate()} disabled={logout.isPending}>
-                    Log out
+                    {t("nav.logOut")}
                   </MenuItem>
                 </MenuList>
               </MenuPopover>

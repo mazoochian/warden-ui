@@ -43,6 +43,7 @@ export default function AuditLogPage() {
       <Section title="Filter">
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <Input
+            aria-label="Filter by exact action"
             placeholder="Filter by exact action, e.g. bot_view.send"
             value={actionFilter}
             onChange={(_, data) => {

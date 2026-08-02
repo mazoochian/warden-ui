@@ -1,7 +1,7 @@
 "use client";
 
 import { ChatSettings, useChatMembers, useChatSettings, useMyChats, useSetChatSettings } from "@/hooks/useMyChats";
-import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { EmptyState, PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
 import { Button, Caption1, Field, Spinner, Switch, Text, Textarea } from "@fluentui/react-components";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -10,10 +10,15 @@ function formatLastSeen(seconds: number | null) {
   return seconds ? new Date(seconds * 1000).toLocaleString() : "never";
 }
 
+const thinkingOptions = [
+  { value: "default" as const, label: "Bot default" },
+  { value: "on" as const, label: "Always show" },
+  { value: "off" as const, label: "Always hide" },
+];
+
 /** Seeds its editable state directly from `initial` (no effect needed --
  * mounted fresh, via `key`, whenever the loaded settings actually change). */
 function SettingsForm({ chatId, initial }: { chatId: number; initial: ChatSettings }) {
-  const s = useCommonStyles();
   const setSettings = useSetChatSettings(chatId);
 
   const [persona, setPersona] = useState(initial.persona ?? "");
@@ -49,17 +54,7 @@ function SettingsForm({ chatId, initial }: { chatId: number; initial: ChatSettin
       />
 
       <Field label="Thinking display">
-        <div className={s.row}>
-          {(["default", "on", "off"] as const).map((opt) => (
-            <Button
-              key={opt}
-              appearance={thinkingOverride === opt ? "primary" : "secondary"}
-              onClick={() => setThinkingOverride(opt)}
-            >
-              {opt === "default" ? "Bot default" : opt === "on" ? "Always show" : "Always hide"}
-            </Button>
-          ))}
-        </div>
+        <ToggleButtonGroup ariaLabel="Thinking display" value={thinkingOverride} options={thinkingOptions} onChange={setThinkingOverride} />
       </Field>
 
       <Button appearance="primary" disabled={setSettings.isPending} onClick={save} style={{ alignSelf: "flex-start" }}>

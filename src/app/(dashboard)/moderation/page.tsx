@@ -22,7 +22,7 @@ import {
   TableRow,
   Text,
 } from "@fluentui/react-components";
-import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { EmptyState, PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
 import { useChatMembers, useMyChats, type ChatMember } from "@/hooks/useMyChats";
 import { isAdmin, useSession } from "@/hooks/useSession";
 import {
@@ -106,7 +106,10 @@ function MembersSection({ chatId, canPromote }: { chatId: number; canPromote: bo
   });
 
   return (
-    <Section title="Members" action={<SearchBox placeholder="Search members..." value={query} onChange={(_, d) => setQuery(d.value)} />}>
+    <Section
+      title="Members"
+      action={<SearchBox aria-label="Search members" placeholder="Search members..." value={query} onChange={(_, d) => setQuery(d.value)} />}
+    >
       {isPending && <Spinner label="Loading members..." />}
       {isError && <Body1>Failed to load members.</Body1>}
       {data && members.length === 0 && <EmptyState text="No members match." />}
@@ -170,7 +173,6 @@ const redactModes = [
 ] as const;
 
 function RedactSection({ chatId }: { chatId: number }) {
-  const s = useCommonStyles();
   const redact = useRedact(chatId);
   const { data: members } = useChatMembers(chatId);
 
@@ -199,13 +201,7 @@ function RedactSection({ chatId }: { chatId: number }) {
 
   return (
     <Section title="Redact">
-      <div className={s.row}>
-        {redactModes.map((m) => (
-          <Button key={m.value} appearance={mode === m.value ? "primary" : "secondary"} onClick={() => setMode(m.value)}>
-            {m.label}
-          </Button>
-        ))}
-      </div>
+      <ToggleButtonGroup ariaLabel="Redact mode" value={mode} options={redactModes} onChange={setMode} />
 
       {(mode === "lastn" || mode === "user") && (
         <Field label="How many (blank = as many as possible, capped)">
@@ -270,6 +266,7 @@ export default function ModerationPage() {
 
       <Section title="Chat">
         <Dropdown
+          aria-label="Select a chat"
           placeholder="Select a chat"
           selectedOptions={chatId ? [String(chatId)] : []}
           value={chatOptions.find((c) => c.id === chatId)?.title ?? chatOptions.find((c) => c.id === chatId)?.native_chat_id ?? ""}

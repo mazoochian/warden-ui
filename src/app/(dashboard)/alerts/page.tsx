@@ -20,14 +20,20 @@ import {
   TableRow,
   Text,
 } from "@fluentui/react-components";
-import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { EmptyState, PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
 import { useMyChats } from "@/hooks/useMyChats";
 import { ApiError } from "@/lib/api";
+import { t } from "@/lib/i18n";
 import { useAlerts, useCancelAlert, useCreateAlert, type AlertCondition, type AlertKind } from "@/hooks/useAlerts";
 
 function unitFor(kind: AlertKind) {
   return kind === "crypto" ? "usd" : kind === "weather" ? "°C" : "AQI";
 }
+
+const conditionOptions: { value: AlertCondition; label: string }[] = [
+  { value: "above", label: t("alerts.conditionAbove") },
+  { value: "below", label: t("alerts.conditionBelow") },
+];
 
 function NewAlertForm() {
   const s = useCommonStyles();
@@ -52,11 +58,11 @@ function NewAlertForm() {
   };
 
   return (
-    <Section title="New alert">
+    <Section title={t("alerts.newAlert")}>
       <div className={s.formGrid}>
-        <Field label="Chat">
+        <Field label={t("alerts.chatLabel")}>
           <Dropdown
-            placeholder="Select a chat"
+            placeholder={t("alerts.selectChat")}
             selectedOptions={chatId ? [String(chatId)] : []}
             value={chatOptions.find((c) => c.id === chatId)?.title ?? chatOptions.find((c) => c.id === chatId)?.native_chat_id ?? ""}
             onOptionSelect={(_, d) => setChatId(d.optionValue ? Number(d.optionValue) : undefined)}
@@ -69,42 +75,35 @@ function NewAlertForm() {
           </Dropdown>
         </Field>
 
-        <Field label="Kind">
+        <Field label={t("alerts.kindLabel")}>
           <Dropdown value={kind} selectedOptions={[kind]} onOptionSelect={(_, d) => d.optionValue && setKind(d.optionValue as AlertKind)}>
-            <Option value="crypto">Crypto</Option>
-            <Option value="weather">Weather</Option>
-            <Option value="aqi">Air quality</Option>
+            <Option value="crypto">{t("alerts.kindCrypto")}</Option>
+            <Option value="weather">{t("alerts.kindWeather")}</Option>
+            <Option value="aqi">{t("alerts.kindAqi")}</Option>
           </Dropdown>
         </Field>
 
-        <Field label={kind === "crypto" ? "Coin (e.g. bitcoin)" : "City"}>
+        <Field label={kind === "crypto" ? t("alerts.subjectCrypto") : t("alerts.subjectOther")}>
           <Input value={subject} onChange={(_, d) => setSubject(d.value)} />
         </Field>
 
-        <Field label="Condition">
-          <div className={s.row}>
-            <Button appearance={condition === "above" ? "primary" : "secondary"} onClick={() => setCondition("above")}>
-              Above
-            </Button>
-            <Button appearance={condition === "below" ? "primary" : "secondary"} onClick={() => setCondition("below")}>
-              Below
-            </Button>
-          </div>
+        <Field label={t("alerts.conditionLabel")}>
+          <ToggleButtonGroup ariaLabel={t("alerts.conditionLabel")} value={condition} options={conditionOptions} onChange={setCondition} />
         </Field>
 
-        <Field label={`Threshold (${unitFor(kind)})`}>
+        <Field label={t("alerts.threshold", { unit: unitFor(kind) })}>
           <Input type="number" value={threshold} onChange={(_, d) => setThreshold(d.value)} />
         </Field>
       </div>
 
       {createAlert.isError && (
         <MessageBar intent="error">
-          <MessageBarBody>{createAlert.error instanceof ApiError ? createAlert.error.message : "Couldn't create that alert."}</MessageBarBody>
+          <MessageBarBody>{createAlert.error instanceof ApiError ? createAlert.error.message : t("alerts.createFailed")}</MessageBarBody>
         </MessageBar>
       )}
 
       <Button appearance="primary" disabled={!canSubmit || createAlert.isPending} onClick={submit} style={{ alignSelf: "flex-start" }}>
-        Create alert
+        {t("alerts.create")}
       </Button>
     </Section>
   );
@@ -117,25 +116,22 @@ export default function AlertsPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Alerts"
-        description="Standing crypto/weather/AQI alerts you've set, across every chat you're a member of -- mirrors /alert."
-      />
+      <PageHeader title={t("alerts.title")} description={t("alerts.description")} />
 
       <NewAlertForm />
 
-      <Section title="Active">
-        {isPending && <Spinner label="Loading alerts..." />}
-        {isError && <Body1>Failed to load alerts.</Body1>}
-        {data && data.items.length === 0 && <EmptyState text="No active alerts." />}
+      <Section title={t("alerts.active")}>
+        {isPending && <Spinner label={t("alerts.loading")} />}
+        {isError && <Body1>{t("alerts.loadFailed")}</Body1>}
+        {data && data.items.length === 0 && <EmptyState text={t("alerts.none")} />}
         {data && data.items.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHeaderCell>Chat</TableHeaderCell>
-                <TableHeaderCell>Kind</TableHeaderCell>
-                <TableHeaderCell>Subject</TableHeaderCell>
-                <TableHeaderCell>Condition</TableHeaderCell>
+                <TableHeaderCell>{t("alerts.columnChat")}</TableHeaderCell>
+                <TableHeaderCell>{t("alerts.columnKind")}</TableHeaderCell>
+                <TableHeaderCell>{t("alerts.columnSubject")}</TableHeaderCell>
+                <TableHeaderCell>{t("alerts.columnCondition")}</TableHeaderCell>
                 <TableHeaderCell />
               </TableRow>
             </TableHeader>
@@ -154,7 +150,7 @@ export default function AlertsPage() {
                   </TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => cancelAlert.mutate(al.id)} disabled={cancelAlert.isPending}>
-                      Cancel
+                      {t("alerts.cancel")}
                     </Button>
                   </TableCell>
                 </TableRow>

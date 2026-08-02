@@ -1,7 +1,7 @@
 "use client";
 
-import { Body1, Caption1, Card, Subtitle1, Title3, makeStyles, tokens, shorthands, Badge } from "@fluentui/react-components";
-import type { ReactNode } from "react";
+import { Badge, Body1, Button, Caption1, Card, Subtitle1, Title3, makeStyles, shorthands, tokens } from "@fluentui/react-components";
+import type { KeyboardEvent, ReactNode } from "react";
 
 /**
  * Shared layout primitives used across every real page -- ported from the
@@ -137,6 +137,73 @@ export function PlatformBadge({ platform }: { platform: string }) {
       {platform}
     </Badge>
   );
+}
+
+/**
+ * Accessible "segmented button" toggle group -- several pages
+ * (Reminders' when-mode, Alerts' condition, Group Administration's
+ * redact mode, per-group Thinking display, Personal Settings' date/time
+ * format) hand-rolled this same pattern as a plain row of `Button`s with
+ * only an `appearance` swap for the selected one, which is a visual cue
+ * only -- nothing told a screen reader which option was selected, or that
+ * the buttons were a related set at all. Uses the "pressed toggle
+ * button" ARIA pattern (`aria-pressed` per button inside a labeled
+ * `role="group"`) rather than `radiogroup`/`radio`, since these stay
+ * individually Tab-reachable (no roving-tabindex/arrow-key handling here)
+ * -- `radiogroup` semantics would promise arrow-key navigation this
+ * doesn't implement.
+ */
+export function ToggleButtonGroup<T extends string>({
+  ariaLabel,
+  value,
+  options,
+  onChange,
+}: {
+  ariaLabel: string;
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  const s = useCommonStyles();
+  return (
+    <div className={s.row} role="group" aria-label={ariaLabel}>
+      {options.map((opt) => (
+        <Button
+          key={opt.value}
+          appearance={value === opt.value ? "primary" : "secondary"}
+          aria-pressed={value === opt.value}
+          onClick={() => onChange(opt.value)}
+        >
+          {opt.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Props to spread onto a clickable `TableRow` (the "click a row to open
+ * its detail page" pattern used by Admin Chats, Admin Users, and My
+ * Groups) so it's actually keyboard-operable -- a bare `onClick` on a
+ * `<tr>` (this code's previous state) has no keyboard equivalent at all,
+ * and no affordance telling assistive tech the row does anything.
+ * `role="button"` on the row does give up the row's native
+ * `row`/`gridcell` semantics for its cells, a real tradeoff, but the
+ * alternative -- mouse-only navigation -- is worse; the row's own visible
+ * text is still read as the resulting button's accessible name.
+ */
+export function clickableRowProps(onActivate: () => void) {
+  return {
+    role: "button" as const,
+    tabIndex: 0,
+    onClick: onActivate,
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onActivate();
+      }
+    },
+  };
 }
 
 export function EmptyState({ text }: { text: string }) {

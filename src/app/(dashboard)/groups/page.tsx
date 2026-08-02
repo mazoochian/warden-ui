@@ -1,7 +1,7 @@
 "use client";
 
 import { useMyChats } from "@/hooks/useMyChats";
-import { EmptyState, PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
+import { clickableRowProps, EmptyState, PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
 import { Spinner, Table, TableBody, TableCell, TableCellLayout, TableHeader, TableHeaderCell, TableRow, Text } from "@fluentui/react-components";
 import { useRouter } from "next/navigation";
 
@@ -33,7 +33,11 @@ export default function GroupsPage() {
               </TableHeader>
               <TableBody>
                 {data.items.map((chat) => (
-                  <TableRow key={chat.id} className={s.clickableRow} onClick={() => router.push(`/groups/${chat.id}`)}>
+                  <TableRow
+                    key={chat.id}
+                    className={s.clickableRow}
+                    {...clickableRowProps(() => router.push(`/groups/${chat.id}`))}
+                  >
                     <TableCell>
                       <TableCellLayout>
                         <Text weight="semibold">{chat.title ?? chat.native_chat_id}</Text>

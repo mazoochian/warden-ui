@@ -24,7 +24,7 @@ function DynamicRow({ entry }: { entry: ConfigEntry }) {
         )}
       </div>
       <div className={s.row}>
-        <Input value={draft} onChange={(_, data) => setDraft(data.value)} size="small" />
+        <Input aria-label={entry.label} value={draft} onChange={(_, data) => setDraft(data.value)} size="small" />
         <Button
           size="small"
           appearance={dirty ? "primary" : "secondary"}

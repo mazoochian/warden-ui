@@ -16,6 +16,7 @@ function ModuleRow({ module }: { module: ModuleInfo }) {
         </Text>
       </div>
       <Switch
+        aria-label={module.label}
         checked={module.enabled}
         disabled={setModule.isPending}
         onChange={(_, data) => setModule.mutate({ key: module.key, enabled: data.checked })}
