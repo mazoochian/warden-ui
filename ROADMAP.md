@@ -574,6 +574,25 @@ member/target lookups reused for "who am I sending to").*
     same `t("page.key")` substitution already done six times over), just
     not attempted here to keep this pass to a bounded, real subset rather
     than touching every `.tsx` file in one sweep.
+  - **Follow-up (2026-08-02), later same day:** converted Moderation
+    (`moderation/page.tsx`), Convert (`convert/page.tsx`), Groups both list
+    and per-group settings (`groups/page.tsx`, `groups/[id]/page.tsx` —
+    the latter under a new `groupSettings.*` key namespace since it's a
+    separate file from the list page), Personal Settings
+    (`settings/page.tsx`), Account & Sessions (`account/page.tsx`), and
+    Notes (`notes/page.tsx`, added same day in Phase 8 below, so it had
+    never gone through a conversion pass at all) — same mechanical
+    `t("page.key")` substitution, no new i18n infrastructure. One real fix
+    needed along the way: `convert/page.tsx` had a local `targets.map((t)
+    => ...)` loop variable shadowing the imported `t()` function; renamed
+    to `fmt`. Pluralized strings (group/session counts) stay two flat keys
+    picked in code (`*.countOne`/`*.countOther`,
+    `*.sessionCountOne`/`*.sessionCountOther`) rather than real plural
+    rules, consistent with this module's "no ICU, not at this scale"
+    stance. **Still not converted:** every admin page (Chats/Identities/
+    Modules/Config/Audit Log) and Bot View — genuinely out of scope for
+    this pass, not attempted. RTL itself remains fully unaddressed, same
+    as above. Verified: `npm run lint` and `npm run build` both clean.
   - **RTL groundwork, not attempted, needs flagging for later** (per
     `ARCHITECTURE.md` §9's own "pick it up later without a rewrite, not a
     blocker now" framing): a grep for hardcoded physical-direction CSS

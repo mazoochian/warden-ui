@@ -38,6 +38,7 @@ import {
   type RedactInput,
 } from "@/hooks/useModeration";
 import { ApiError } from "@/lib/api";
+import { t } from "@/lib/i18n";
 
 function errorMessage(err: unknown, fallback: string) {
   return err instanceof ApiError ? err.message : fallback;
@@ -67,29 +68,29 @@ function MemberRow({ chatId, member, canPromote }: { chatId: number; member: Cha
       <TableCell>
         <div className={s.row}>
           <Button size="small" disabled={anyPending} onClick={() => mute.mutate(target)}>
-            Mute
+            {t("moderation.mute")}
           </Button>
           <Button size="small" disabled={anyPending} onClick={() => unmute.mutate(target)}>
-            Unmute
+            {t("moderation.unmute")}
           </Button>
           {canPromote && (
             <Button size="small" disabled={anyPending} onClick={() => promote.mutate(target)}>
-              Promote
+              {t("moderation.promote")}
             </Button>
           )}
           {canPromote && (
             <Button size="small" disabled={anyPending} onClick={() => demote.mutate(target)}>
-              Demote
+              {t("moderation.demote")}
             </Button>
           )}
           <Button size="small" appearance="outline" disabled={anyPending} onClick={() => kick.mutate(target)}>
-            Kick
+            {t("moderation.kick")}
           </Button>
           <Button size="small" appearance="outline" disabled={anyPending} onClick={() => ban.mutate(target)}>
-            Ban
+            {t("moderation.ban")}
           </Button>
         </div>
-        {anyError && <Caption1 style={{ color: "var(--colorPaletteRedForeground1)" }}>{errorMessage(anyError, "Action failed.")}</Caption1>}
+        {anyError && <Caption1 style={{ color: "var(--colorPaletteRedForeground1)" }}>{errorMessage(anyError, t("moderation.actionFailed"))}</Caption1>}
       </TableCell>
     </TableRow>
   );
@@ -107,18 +108,25 @@ function MembersSection({ chatId, canPromote }: { chatId: number; canPromote: bo
 
   return (
     <Section
-      title="Members"
-      action={<SearchBox aria-label="Search members" placeholder="Search members..." value={query} onChange={(_, d) => setQuery(d.value)} />}
+      title={t("moderation.members")}
+      action={
+        <SearchBox
+          aria-label={t("moderation.searchMembersLabel")}
+          placeholder={t("moderation.searchMembersPlaceholder")}
+          value={query}
+          onChange={(_, d) => setQuery(d.value)}
+        />
+      }
     >
-      {isPending && <Spinner label="Loading members..." />}
-      {isError && <Body1>Failed to load members.</Body1>}
-      {data && members.length === 0 && <EmptyState text="No members match." />}
+      {isPending && <Spinner label={t("moderation.loadingMembers")} />}
+      {isError && <Body1>{t("moderation.loadMembersFailed")}</Body1>}
+      {data && members.length === 0 && <EmptyState text={t("moderation.noMembersMatch")} />}
       {data && members.length > 0 && (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHeaderCell>Member</TableHeaderCell>
-              <TableHeaderCell>Actions</TableHeaderCell>
+              <TableHeaderCell>{t("moderation.columnMember")}</TableHeaderCell>
+              <TableHeaderCell>{t("moderation.columnActions")}</TableHeaderCell>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -139,26 +147,26 @@ function PinSection({ chatId }: { chatId: number }) {
   const [messageId, setMessageId] = useState("");
 
   return (
-    <Section title="Pin / Unpin">
-      <Field label="Native message id" hint="The platform's own message id (e.g. Telegram's message_id) -- there's no message browser yet, so this is typed in directly.">
+    <Section title={t("moderation.pinUnpin")}>
+      <Field label={t("moderation.nativeMessageId")} hint={t("moderation.nativeMessageIdHint")}>
         <Input value={messageId} onChange={(_, d) => setMessageId(d.value)} />
       </Field>
       <div className={s.row}>
         <Button appearance="primary" disabled={!messageId.trim() || pin.isPending} onClick={() => pin.mutate({ message_id: messageId.trim() })}>
-          Pin
+          {t("moderation.pin")}
         </Button>
         <Button disabled={unpin.isPending} onClick={() => unpin.mutate(undefined)}>
-          Unpin current
+          {t("moderation.unpinCurrent")}
         </Button>
       </div>
       {pin.isError && (
         <MessageBar intent="error">
-          <MessageBarBody>{errorMessage(pin.error, "Couldn't pin that message.")}</MessageBarBody>
+          <MessageBarBody>{errorMessage(pin.error, t("moderation.pinFailed"))}</MessageBarBody>
         </MessageBar>
       )}
       {unpin.isError && (
         <MessageBar intent="error">
-          <MessageBarBody>{errorMessage(unpin.error, "Couldn't unpin.")}</MessageBarBody>
+          <MessageBarBody>{errorMessage(unpin.error, t("moderation.unpinFailed"))}</MessageBarBody>
         </MessageBar>
       )}
     </Section>
@@ -166,10 +174,10 @@ function PinSection({ chatId }: { chatId: number }) {
 }
 
 const redactModes = [
-  { value: "lastn", label: "Last N messages" },
-  { value: "user", label: "By member" },
-  { value: "text", label: "Contains text" },
-  { value: "regex", label: "Regex" },
+  { value: "lastn", label: t("moderation.redactModeLastN") },
+  { value: "user", label: t("moderation.redactModeUser") },
+  { value: "text", label: t("moderation.redactModeText") },
+  { value: "regex", label: t("moderation.redactModeRegex") },
 ] as const;
 
 function RedactSection({ chatId }: { chatId: number }) {
@@ -200,18 +208,18 @@ function RedactSection({ chatId }: { chatId: number }) {
   };
 
   return (
-    <Section title="Redact">
-      <ToggleButtonGroup ariaLabel="Redact mode" value={mode} options={redactModes} onChange={setMode} />
+    <Section title={t("moderation.redact")}>
+      <ToggleButtonGroup ariaLabel={t("moderation.redactModeGroupLabel")} value={mode} options={redactModes} onChange={setMode} />
 
       {(mode === "lastn" || mode === "user") && (
-        <Field label="How many (blank = as many as possible, capped)">
+        <Field label={t("moderation.howMany")}>
           <Input type="number" min={1} value={n} onChange={(_, d) => setN(d.value)} style={{ width: 120 }} />
         </Field>
       )}
       {mode === "user" && (
-        <Field label="Member">
+        <Field label={t("moderation.member")}>
           <Dropdown
-            placeholder="Select a member"
+            placeholder={t("moderation.selectMember")}
             selectedOptions={identityId !== undefined ? [String(identityId)] : []}
             value={memberOptions.find((m) => m.identity_id === identityId)?.display_name ?? ""}
             onOptionSelect={(_, d) => setIdentityId(d.optionValue ? Number(d.optionValue) : undefined)}
@@ -225,24 +233,24 @@ function RedactSection({ chatId }: { chatId: number }) {
         </Field>
       )}
       {mode === "text" && (
-        <Field label="Substring (case-insensitive)">
+        <Field label={t("moderation.substring")}>
           <Input value={substring} onChange={(_, d) => setSubstring(d.value)} />
         </Field>
       )}
       {mode === "regex" && (
-        <Field label="Pattern" hint="Owner/bot-admin only -- a stricter gate than the other three modes.">
+        <Field label={t("moderation.pattern")} hint={t("moderation.patternHint")}>
           <Input value={pattern} onChange={(_, d) => setPattern(d.value)} />
         </Field>
       )}
 
       {redact.isError && (
         <MessageBar intent="error">
-          <MessageBarBody>{errorMessage(redact.error, "Couldn't redact.")}</MessageBarBody>
+          <MessageBarBody>{errorMessage(redact.error, t("moderation.redactFailed"))}</MessageBarBody>
         </MessageBar>
       )}
 
       <Button appearance="primary" disabled={!canSubmit || redact.isPending} onClick={submit} style={{ alignSelf: "flex-start" }}>
-        Delete
+        {t("moderation.delete")}
       </Button>
     </Section>
   );
@@ -259,15 +267,12 @@ export default function ModerationPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Group Administration"
-        description="Kick/ban/mute/pin/promote/demote and the four redact modes, each routed through the exact same auth.checkGroupAdminAccess/isOwnerOrSudoBotAdmin functions the slash commands already use -- no separate permission ladder, and no extra confirmation step here either, matching how these already fire immediately from /menu."
-      />
+      <PageHeader title={t("moderation.title")} description={t("moderation.description")} />
 
-      <Section title="Chat">
+      <Section title={t("moderation.chat")}>
         <Dropdown
-          aria-label="Select a chat"
-          placeholder="Select a chat"
+          aria-label={t("moderation.selectChat")}
+          placeholder={t("moderation.selectChat")}
           selectedOptions={chatId ? [String(chatId)] : []}
           value={chatOptions.find((c) => c.id === chatId)?.title ?? chatOptions.find((c) => c.id === chatId)?.native_chat_id ?? ""}
           onOptionSelect={(_, d) => setChatId(d.optionValue ? Number(d.optionValue) : undefined)}

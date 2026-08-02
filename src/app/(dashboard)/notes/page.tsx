@@ -23,6 +23,7 @@ import {
 import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
 import { useMyChats } from "@/hooks/useMyChats";
 import { ApiError } from "@/lib/api";
+import { t } from "@/lib/i18n";
 import { useCreateNote, useDeleteNote, useNotes } from "@/hooks/useNotes";
 
 function formatCreatedAt(seconds: number) {
@@ -50,11 +51,11 @@ function NewNoteForm() {
   };
 
   return (
-    <Section title="New note">
+    <Section title={t("notes.newNote")}>
       <div className={s.formGrid}>
-        <Field label="Chat">
+        <Field label={t("notes.chatLabel")}>
           <Dropdown
-            placeholder="Select a chat"
+            placeholder={t("notes.selectChat")}
             selectedOptions={chatId ? [String(chatId)] : []}
             value={chatOptions.find((c) => c.id === chatId)?.title ?? chatOptions.find((c) => c.id === chatId)?.native_chat_id ?? ""}
             onOptionSelect={(_, d) => setChatId(d.optionValue ? Number(d.optionValue) : undefined)}
@@ -68,18 +69,18 @@ function NewNoteForm() {
         </Field>
       </div>
 
-      <Field label="Text" hint={`${text.length}/1000 bytes`} validationState={text.length > 1000 ? "error" : "none"}>
+      <Field label={t("notes.textLabel")} hint={t("notes.textHint", { count: text.length })} validationState={text.length > 1000 ? "error" : "none"}>
         <Textarea value={text} onChange={(_, d) => setText(d.value)} rows={3} />
       </Field>
 
       {createNote.isError && (
         <MessageBar intent="error">
-          <MessageBarBody>{createNote.error instanceof ApiError ? createNote.error.message : "Couldn't save that note."}</MessageBarBody>
+          <MessageBarBody>{createNote.error instanceof ApiError ? createNote.error.message : t("notes.saveFailed")}</MessageBarBody>
         </MessageBar>
       )}
 
       <Button appearance="primary" disabled={!canSubmit || createNote.isPending} onClick={submit} style={{ alignSelf: "flex-start" }}>
-        Add note
+        {t("notes.addNote")}
       </Button>
     </Section>
   );
@@ -92,24 +93,21 @@ export default function NotesPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Notes"
-        description="Notes, shopping lists, wishlists, and other freeform text you've added, across every chat you're a member of -- mirrors /note. Delete your own -- the bot owner can delete anyone's."
-      />
+      <PageHeader title={t("notes.title")} description={t("notes.description")} />
 
       <NewNoteForm />
 
-      <Section title="Saved">
-        {isPending && <Spinner label="Loading notes..." />}
-        {isError && <Body1>Failed to load notes.</Body1>}
-        {data && data.items.length === 0 && <EmptyState text="No notes yet." />}
+      <Section title={t("notes.saved")}>
+        {isPending && <Spinner label={t("notes.loading")} />}
+        {isError && <Body1>{t("notes.loadFailed")}</Body1>}
+        {data && data.items.length === 0 && <EmptyState text={t("notes.none")} />}
         {data && data.items.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHeaderCell>Chat</TableHeaderCell>
-                <TableHeaderCell>Text</TableHeaderCell>
-                <TableHeaderCell>Added</TableHeaderCell>
+                <TableHeaderCell>{t("notes.columnChat")}</TableHeaderCell>
+                <TableHeaderCell>{t("notes.columnText")}</TableHeaderCell>
+                <TableHeaderCell>{t("notes.columnAdded")}</TableHeaderCell>
                 <TableHeaderCell />
               </TableRow>
             </TableHeader>
@@ -118,14 +116,14 @@ export default function NotesPage() {
                 <TableRow key={n.id}>
                   <TableCell>
                     <TableCellLayout>
-                      <Text weight="semibold">{n.chat_title ?? `Chat #${n.chat_id}`}</Text>
+                      <Text weight="semibold">{n.chat_title ?? t("notes.chatFallback", { id: n.chat_id })}</Text>
                     </TableCellLayout>
                   </TableCell>
                   <TableCell style={{ whiteSpace: "pre-wrap" }}>{n.text}</TableCell>
                   <TableCell>{formatCreatedAt(n.created_at)}</TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => deleteNote.mutate(n.id)} disabled={deleteNote.isPending}>
-                      Delete
+                      {t("notes.delete")}
                     </Button>
                   </TableCell>
                 </TableRow>

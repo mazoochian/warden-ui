@@ -2,18 +2,19 @@
 
 import { ChatSettings, useChatMembers, useChatSettings, useMyChats, useSetChatSettings } from "@/hooks/useMyChats";
 import { EmptyState, PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import { Button, Caption1, Field, Spinner, Switch, Text, Textarea } from "@fluentui/react-components";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
 function formatLastSeen(seconds: number | null) {
-  return seconds ? new Date(seconds * 1000).toLocaleString() : "never";
+  return seconds ? new Date(seconds * 1000).toLocaleString() : t("groupSettings.never");
 }
 
 const thinkingOptions = [
-  { value: "default" as const, label: "Bot default" },
-  { value: "on" as const, label: "Always show" },
-  { value: "off" as const, label: "Always hide" },
+  { value: "default" as const, label: t("groupSettings.thinkingDefault") },
+  { value: "on" as const, label: t("groupSettings.thinkingOn") },
+  { value: "off" as const, label: t("groupSettings.thinkingOff") },
 ];
 
 /** Seeds its editable state directly from `initial` (no effect needed --
@@ -38,27 +39,23 @@ function SettingsForm({ chatId, initial }: { chatId: number; initial: ChatSettin
   };
 
   return (
-    <Section title="Settings">
-      <Field label="Persona" hint="Custom system-prompt override for this chat. Empty = default persona.">
+    <Section title={t("groupSettings.settings")}>
+      <Field label={t("groupSettings.persona")} hint={t("groupSettings.personaHint")}>
         <Textarea value={persona} onChange={(_, data) => setPersona(data.value)} resize="vertical" rows={4} />
       </Field>
 
-      <Field label="Magic word" hint="Warden answers any message containing this word. Empty = off.">
+      <Field label={t("groupSettings.magicWord")} hint={t("groupSettings.magicWordHint")}>
         <Textarea value={magicWord} onChange={(_, data) => setMagicWord(data.value)} rows={1} />
       </Field>
 
-      <Switch
-        checked={digestEnabled}
-        onChange={(_, data) => setDigestEnabled(data.checked)}
-        label="Recent-activity digest enabled"
-      />
+      <Switch checked={digestEnabled} onChange={(_, data) => setDigestEnabled(data.checked)} label={t("groupSettings.digestEnabled")} />
 
-      <Field label="Thinking display">
-        <ToggleButtonGroup ariaLabel="Thinking display" value={thinkingOverride} options={thinkingOptions} onChange={setThinkingOverride} />
+      <Field label={t("groupSettings.thinkingDisplay")}>
+        <ToggleButtonGroup ariaLabel={t("groupSettings.thinkingDisplay")} value={thinkingOverride} options={thinkingOptions} onChange={setThinkingOverride} />
       </Field>
 
       <Button appearance="primary" disabled={setSettings.isPending} onClick={save} style={{ alignSelf: "flex-start" }}>
-        Save
+        {t("groupSettings.save")}
       </Button>
     </Section>
   );
@@ -75,18 +72,17 @@ export default function GroupSettingsPage() {
   const { data: settings, isPending, isError } = useChatSettings(chatId);
   const { data: members } = useChatMembers(chatId);
 
-  if (isPending) return <Spinner label="Loading settings..." />;
-  if (isError || !settings)
-    return <Section title="Group">Failed to load settings (are you still a live admin of this chat?).</Section>;
+  if (isPending) return <Spinner label={t("groupSettings.loading")} />;
+  if (isError || !settings) return <Section title={t("groupSettings.settings")}>{t("groupSettings.loadFailed")}</Section>;
 
   return (
     <div className={s.page}>
-      <PageHeader title={chat?.title ?? `Chat #${chatId}`} />
+      <PageHeader title={chat?.title ?? t("groupSettings.chatFallback", { id: chatId })} />
 
       <SettingsForm key={JSON.stringify(settings)} chatId={chatId} initial={settings} />
 
-      <Section title="Members">
-        {(!members || members.items.length === 0) && <EmptyState text="No members recorded yet." />}
+      <Section title={t("groupSettings.members")}>
+        {(!members || members.items.length === 0) && <EmptyState text={t("groupSettings.noMembers")} />}
         <div>
           {members?.items.map((m) => (
             <div key={m.identity_id} className={s.listRow}>

@@ -18,6 +18,7 @@ import {
 } from "@fluentui/react-components";
 import { ArrowUploadRegular } from "@fluentui/react-icons";
 import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { t } from "@/lib/i18n";
 import { candidateTargets, extOf } from "@/lib/convertFormats";
 
 const useStyles = makeStyles({
@@ -100,7 +101,7 @@ export default function ConvertPage() {
     try {
       await convertAndDownload(file, target);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Conversion failed.");
+      setError(err instanceof Error ? err.message : t("convert.conversionFailed"));
     } finally {
       setIsConverting(false);
     }
@@ -108,12 +109,9 @@ export default function ConvertPage() {
 
   return (
     <div className={s.page}>
-      <PageHeader
-        title="Convert"
-        description="Convert a file between formats within the same family -- image/image, audio-video/audio-video, or document/document (a pdf source can only become txt). Calls the same one-shot path as /convert <format> as a caption."
-      />
+      <PageHeader title={t("convert.title")} description={t("convert.description")} />
 
-      <Section title="File">
+      <Section title={t("convert.file")}>
         {/* A native <label> would be the simplest way to make this
             click-to-browse, but the file input has to stay reachable for
             the drag-and-drop handlers below too, so this is a
@@ -125,7 +123,7 @@ export default function ConvertPage() {
           className={`${styles.dropzone} ${dragActive ? styles.dropzoneActive : ""}`}
           role="button"
           tabIndex={0}
-          aria-label={file ? `Selected file: ${file.name}. Press Enter to choose a different file.` : "Drag a file here, or press Enter to browse for one."}
+          aria-label={file ? t("convert.dropzoneWithFile", { name: file.name }) : t("convert.dropzoneEmpty")}
           onClick={() => inputRef.current?.click()}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -157,23 +155,23 @@ export default function ConvertPage() {
           {file ? (
             <Text weight="semibold">{file.name}</Text>
           ) : (
-            <Body1>Drag a file here, or click to browse.</Body1>
+            <Body1>{t("convert.dropzoneText")}</Body1>
           )}
         </div>
 
-        {file && targets.length === 0 && <Caption1 className={s.muted}>That file type isn&apos;t supported for conversion.</Caption1>}
+        {file && targets.length === 0 && <Caption1 className={s.muted}>{t("convert.unsupportedType")}</Caption1>}
 
         {file && targets.length > 0 && (
-          <Field label="Target format">
+          <Field label={t("convert.targetFormat")}>
             <Dropdown
-              placeholder="Select a format"
+              placeholder={t("convert.selectFormat")}
               selectedOptions={target ? [target] : []}
               value={target}
               onOptionSelect={(_, d) => setTarget(d.optionValue ?? "")}
             >
-              {targets.map((t) => (
-                <Option key={t} value={t}>
-                  {t}
+              {targets.map((fmt) => (
+                <Option key={fmt} value={fmt}>
+                  {fmt}
                 </Option>
               ))}
             </Dropdown>
@@ -187,7 +185,7 @@ export default function ConvertPage() {
         )}
 
         <Button appearance="primary" disabled={!file || !target || isConverting} onClick={submit} style={{ alignSelf: "flex-start" }}>
-          {isConverting ? <Spinner size="tiny" /> : "Convert"}
+          {isConverting ? <Spinner size="tiny" /> : t("convert.convert")}
         </Button>
       </Section>
     </div>
