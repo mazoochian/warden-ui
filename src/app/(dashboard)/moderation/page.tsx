@@ -22,7 +22,7 @@ import {
   TableRow,
   Text,
 } from "@fluentui/react-components";
-import { EmptyState, PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
+import { EmptyState, PageHeader, Section, TableScroll, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
 import { useChatMembers, useMyChats, type ChatMember } from "@/hooks/useMyChats";
 import { isAdmin, useSession } from "@/hooks/useSession";
 import {
@@ -122,19 +122,21 @@ function MembersSection({ chatId, canPromote }: { chatId: number; canPromote: bo
       {isError && <Body1>{t("moderation.loadMembersFailed")}</Body1>}
       {data && members.length === 0 && <EmptyState text={t("moderation.noMembersMatch")} />}
       {data && members.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHeaderCell>{t("moderation.columnMember")}</TableHeaderCell>
-              <TableHeaderCell>{t("moderation.columnActions")}</TableHeaderCell>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((m) => (
-              <MemberRow key={m.identity_id} chatId={chatId} member={m} canPromote={canPromote} />
-            ))}
-          </TableBody>
-        </Table>
+        <TableScroll label={t("moderation.members")} minWidth={660}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHeaderCell>{t("moderation.columnMember")}</TableHeaderCell>
+                <TableHeaderCell>{t("moderation.columnActions")}</TableHeaderCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members.map((m) => (
+                <MemberRow key={m.identity_id} chatId={chatId} member={m} canPromote={canPromote} />
+              ))}
+            </TableBody>
+          </Table>
+        </TableScroll>
       )}
     </Section>
   );

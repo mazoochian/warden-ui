@@ -1,7 +1,7 @@
 "use client";
 
 import { useIdentities } from "@/hooks/useAdminDirectory";
-import { clickableRowProps, PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
+import { clickableRowProps, PageHeader, PlatformBadge, Section, TableScroll, useCommonStyles } from "@/components/ui-kit";
 import { t } from "@/lib/i18n";
 import {
   Badge,
@@ -51,50 +51,52 @@ export default function AdminIdentitiesPage() {
             />
           }
         >
-          <Table size="small" aria-label={t("adminIdentities.tableLabel")}>
-            <TableHeader>
-              <TableRow>
-                <TableHeaderCell>{t("adminIdentities.columnUser")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminIdentities.columnPlatform")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminIdentities.columnCredits")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminIdentities.columnLastSeen")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminIdentities.columnStatus")}</TableHeaderCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((identity) => (
-                <TableRow
-                  key={identity.id}
-                  className={s.clickableRow}
-                  {...clickableRowProps(() => router.push(`/admin/identities/${identity.id}`))}
-                >
-                  <TableCell>
-                    <TableCellLayout>
-                      <Text weight="semibold">{identity.display_name}</Text>
-                      {identity.username && <span> (@{identity.username})</span>}
-                    </TableCellLayout>
-                  </TableCell>
-                  <TableCell>
-                    <PlatformBadge platform={identity.platform} />
-                  </TableCell>
-                  <TableCell>{identity.credits.toLocaleString()}</TableCell>
-                  <TableCell>{formatLastSeen(identity.last_seen)}</TableCell>
-                  <TableCell>
-                    {identity.is_bot_admin && (
-                      <Badge appearance="filled" color="brand" shape="square" style={{ marginInlineEnd: tokens.spacingHorizontalXS }}>
-                        {t("adminIdentities.botAdmin")}
-                      </Badge>
-                    )}
-                    {identity.is_allowed && (
-                      <Badge appearance="tint" shape="square">
-                        {t("adminIdentities.allowed")}
-                      </Badge>
-                    )}
-                  </TableCell>
+          <TableScroll label={t("adminIdentities.tableLabel")} minWidth={840}>
+            <Table size="small" aria-label={t("adminIdentities.tableLabel")}>
+              <TableHeader>
+                <TableRow>
+                  <TableHeaderCell>{t("adminIdentities.columnUser")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminIdentities.columnPlatform")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminIdentities.columnCredits")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminIdentities.columnLastSeen")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminIdentities.columnStatus")}</TableHeaderCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {rows.map((identity) => (
+                  <TableRow
+                    key={identity.id}
+                    className={s.clickableRow}
+                    {...clickableRowProps(() => router.push(`/admin/identities/${identity.id}`))}
+                  >
+                    <TableCell>
+                      <TableCellLayout>
+                        <Text weight="semibold">{identity.display_name}</Text>
+                        {identity.username && <span> (@{identity.username})</span>}
+                      </TableCellLayout>
+                    </TableCell>
+                    <TableCell>
+                      <PlatformBadge platform={identity.platform} />
+                    </TableCell>
+                    <TableCell>{identity.credits.toLocaleString()}</TableCell>
+                    <TableCell>{formatLastSeen(identity.last_seen)}</TableCell>
+                    <TableCell>
+                      {identity.is_bot_admin && (
+                        <Badge appearance="filled" color="brand" shape="square" style={{ marginInlineEnd: tokens.spacingHorizontalXS }}>
+                          {t("adminIdentities.botAdmin")}
+                        </Badge>
+                      )}
+                      {identity.is_allowed && (
+                        <Badge appearance="tint" shape="square">
+                          {t("adminIdentities.allowed")}
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableScroll>
         </Section>
       )}
     </div>

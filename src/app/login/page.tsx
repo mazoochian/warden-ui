@@ -17,20 +17,26 @@ import { GlobeRegular } from "@fluentui/react-icons";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { media } from "@/lib/breakpoints";
 import { t } from "@/lib/i18n";
 
 const useStyles = makeStyles({
   page: {
-    minHeight: "100vh",
+    // `dvh`, not `vh` -- a mobile browser's collapsing address bar makes
+    // `100vh` taller than the visible viewport, which would push the
+    // centred card permanently off-centre and add a phantom scrollbar.
+    minHeight: "100dvh",
     display: "grid",
     placeItems: "center",
     backgroundColor: tokens.colorNeutralBackground3,
     ...shorthands.padding("24px"),
+    [media.narrow]: { ...shorthands.padding("16px") },
   },
   card: {
     width: "100%",
     maxWidth: "380px",
     ...shorthands.padding("28px"),
+    [media.narrow]: { ...shorthands.padding("20px") },
     display: "flex",
     flexDirection: "column",
     gap: "18px",

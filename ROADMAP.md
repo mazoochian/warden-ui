@@ -690,6 +690,212 @@ web API or frontend of its own, the same "zero frontend story" gap Phase
   clean in the normal checkout (no interference — the Phase 12 work only
   exists in the warden repo).
 
+## Phase 9 — Finance (feature parity)
+*Effort: M. Dependencies: Phase 5a (same identity-scoped-list pattern),
+Phase 8 (same "warden shipped a feature with no web API" shape).
+Status: done (2026-08-03).*
+
+Same reactive trigger as Phase 8: warden's own `ROADMAP.md` Phase 17
+(expense tracker, budget planner, subscription tracker) shipped bot-side
+with `/expense`, `/budget`, `/subscription` and a `set_expense` LLM tool,
+but no `API.md`/`router.zig` work in scope — checking warden's
+`src/api/router.zig` directly confirmed no `/api/v1/expenses`,
+`/api/v1/budgets` or `/api/v1/subscriptions` route existed before this
+phase. This is the single largest of the remaining parity gaps: seven
+warden modules now appear as on/off toggles on `/admin/modules` with no
+page to actually use them (`finance`, `keyword_alerts`,
+`welcome_messages`, `power_tools`, `briefings`, `messaging_modes`,
+`polls`), and finance is the most data-heavy of them — tables of amounts
+over time are exactly where a web panel beats a chat interface.
+
+- **warden-side** (a warden-repo change, like Phase 8's `/api/v1/notes`):
+  ten new endpoints in `src/api/router.zig` — see `API.md`'s "Feature
+  parity — Finance" section for the full contract. Store-layer additions
+  alongside them, in files the bot's own commands never needed:
+  `expenses.ExpenseForIdentity`/`listForIdentity`,
+  `subscriptions.SubscriptionForIdentity`/`listForIdentity` (both
+  mirroring `notes.NoteForIdentity` exactly), and
+  `budgets.getById`/`removeById`.
+- **Integer cents end to end, on both sides of the wire.** Phase 17 held
+  the bot-side code to "every amount is an integer cent count, a float
+  only ever appears at the parsing boundary"; this phase holds the web
+  half to the same bar rather than relaxing it because JavaScript makes
+  floats convenient. The API takes `amount_cents`, and the new
+  `src/lib/money.ts` parses a typed decimal by splitting the string and
+  padding the fractional part — never `parseFloat(x) * 100`, whose
+  `1.005 -> 100.49999999999999` rounding error is a silent off-by-one-cent
+  on specific inputs. As a side benefit this also kept `main.zig` (where
+  `parseAmountCents`/`parseIntervalDays` live) entirely out of the change
+  — see "concurrency" below for why that mattered this session.
+- **Two scoping models, mirroring the bot rather than being uniform.**
+  Expenses and subscriptions are identity-scoped ("my spending across every
+  chat", like Reminders/Alerts/Watches/Notes); budgets and the summary are
+  chat-scoped, because a budget is chat-wide policy and "am I over budget"
+  is only meaningful against the whole chat's spending. Budget *mutations*
+  are owner-only (matching `handleBudgetCommand`'s `auth.isOwner`, **not**
+  bot_admin); budget *reads* are open to any chat member, matching
+  `/budget list`. The owner-only form is hidden for non-owners rather than
+  left to 403 on submit.
+- **New `requireChatMember` helper**, deliberately *not* the existing
+  `requireChatAccess` — that one means "live platform admin of this chat,"
+  the right bar for changing a chat's settings but the wrong one for
+  reading a shared ledger every member can already see in-chat. It reuses
+  the same `chat_members.isMember` primitive `resolveCreateIdentity`
+  already authorizes finance *writes* with, so this is an existing check
+  reused for reads, not a second authorization path (per the cross-cutting
+  rule below).
+- **New `percentDecode` helper in `router.zig`.** The pre-existing
+  `queryParam` returns raw, still-encoded slices; every caller written
+  before this one only ever parsed integers out of it, where encoding
+  can't matter, but the expense `category` filter is free text and
+  `eating out & drinks` would have matched no row at all. Malformed
+  escapes pass through as literals rather than failing the request.
+- Frontend: `src/app/(dashboard)/finance/page.tsx` (three tabs —
+  Expenses/Budgets/Subscriptions), `src/hooks/useFinance.ts`,
+  `src/lib/money.ts`, an `AppShell` nav entry between Notes and Convert.
+  **One nav entry with tabs, not three sibling pages**, matching how the
+  bot gates all three commands behind the single `finance` flag. First use
+  of Fluent's `TabList` in this app. Fully i18n'd via `t()` with a new
+  `finance.*` namespace in `en.ts` — Phase 7 left the app 100% converted,
+  and a new page adding hardcoded English would have silently regressed
+  that.
+- **`since` is required from the caller** on the summary endpoint rather
+  than defaulted to "this calendar month" server-side the way `/expense
+  summary` does — the month boundary depends on the viewer's UTC offset,
+  which the frontend already has from `GET /api/v1/me/settings` and the API
+  server does not. `startOfMonthUnix` in `money.ts` computes it.
+- **Concurrency note (real constraint this session, not hypothetical):**
+  another agent was actively working in the warden checkout throughout
+  this phase, so all warden-side work was done in an isolated `git
+  worktree` at `HEAD` and built/tested there — the same isolation Phase 8
+  needed for the same reason. The store/router files this phase touches
+  were confirmed clean in the live checkout before and after; nothing here
+  overlaps that agent's in-flight files (`main.zig`, `briefing.zig`,
+  `chat_settings.zig`, `weather.zig`, `migrate.zig`).
+- **No new migration.** Phase 17's `0029_expenses.sql`/`0030_budgets.sql`/
+  `0031_subscriptions.sql` already define every table this needs, and
+  `finance` was already registered in `feature_flags.known_modules` (unlike
+  Notes, where Phase 8 had to add it).
+- Verified: warden side, `zig build` and `zig build test` green in the
+  isolated worktree against a throwaway Postgres brought up specifically
+  for this run (the shared local test instance was in use by the other
+  agent, and `test_support.openTestDb` truncates every table). warden-ui
+  side, `npx tsc --noEmit`, `npm run lint` and `npm run build` all clean.
+- **Not live-verified against a real chat** — the new endpoints are
+  covered by store-layer tests and a compile-checked frontend, but no
+  actual expense was recorded through the panel against production data
+  this pass.
+
+---
+
+## Phase 10 — Responsive layout (phones and tablets)
+*Effort: M. Dependencies: Phase 7's logical-CSS/RTL groundwork, which this
+relies on rather than re-doing. Status: done (2026-08-04).*
+
+The panel was built desktop-first and had **no** responsive behaviour at
+all: before this phase `grep -rl "matchMedia|@media|useMediaQuery|breakpoint" src`
+matched exactly one file (`app/theme.tsx`, and only for
+`prefers-color-scheme`). The 252px sidebar was hard-coded with no
+small-screen branch, so on a 390px phone it took 65% of the viewport and
+left every page under it unusable rather than merely cramped.
+
+- **Two breakpoints, not a five-step scale** (`src/lib/breakpoints.ts`):
+  `compact` at 1024px and `narrow` at 600px. The app has exactly two
+  layout problems to solve, so an `xs/sm/md/lg/xl` scale would have been
+  five names for two behaviours. `compact` is picked off the real content
+  budget rather than a round number — a portrait tablet is 820px, and 820
+  minus the sidebar leaves 568px for data-dense tables, which is worse
+  than putting the same nav behind a drawer button. Maximums are `.98px`
+  (`max-width: 1023.98px`) so a fractional viewport width can't fall
+  between a `max-width` and its `min-width` counterpart.
+- **Media queries by default, one hook by exception.** Everything visual
+  is a Griffel `[media.narrow]` block, which needs no JS and is correct on
+  first paint. `useIsCompact()` exists for the single thing CSS can't
+  express: AppShell's one nav button has to *mean* two different things
+  (collapse the rail vs open the drawer) and be announced differently.
+  It's `useSyncExternalStore` with a `false` server snapshot, so there's
+  no hydration mismatch.
+- **Sidebar becomes an `OverlayDrawer` below `compact`.** Both render the
+  same extracted `NavContent`, so there's one nav list to keep in step
+  with the routes, not two. The persistent `<nav>` is `display: none`
+  under the breakpoint and the drawer is only mounted above it, so the
+  same 17 links never exist twice in the accessibility tree. Uses Fluent's
+  `position="start"` (not `"left"`), so it opens from the inline start
+  edge under RTL — a drawer sliding in from the physical left would have
+  silently undone Phase 7's RTL work. Tapping a link navigates *and*
+  dismisses; Escape and scrim-click close it (Fluent's Dialog gives focus
+  trap and focus restore for free).
+- **`TableScroll` (`ui-kit.tsx`) is the fix for all thirteen tables.**
+  Worth recording why the breakage was invisible: Fluent's `Table` is
+  `width: 100%; table-layout: fixed`, so it *never* overflows — it divides
+  whatever width it's given by the column count. A six-column expense
+  table on a 358px phone content box got ~60px per column and every cell
+  degraded into one or two characters per line, which is why "the tables
+  are broken on mobile" produced no horizontal scrollbar anywhere to find.
+  The fix is a *floor* (`min-width` per table, 460–900px by column count)
+  plus a scrolling wrapper. Deliberately **not** the popular alternative
+  of collapsing each row into a stacked card at phone width: that would
+  mean rewriting all thirteen tables and giving up the real `<table>`
+  semantics Phase 7's accessibility pass had just finished getting right.
+  The wrapper is `role="region"` + `aria-label` + `tabIndex={0}`, because
+  a scroll area reachable only by touch/trackpad fails WCAG 2.1.1; the
+  label reuses the section title each table already sits under, so no new
+  i18n string was needed.
+- **Shared primitives did most of the work.** Because every page already
+  composes `page`/`tiles`/`section`/`formGrid`/`listRow` from `ui-kit.tsx`
+  instead of rolling its own spacing, one edit per primitive reflowed all
+  of them: stat tiles go 2-up instead of collapsing to one column, form
+  grids go single-column, and `listRow`'s "label left / control right"
+  pairs stack instead of both being crushed.
+- **Two real bugs found by measuring rather than eyeballing:**
+  - `formGrid`'s track floor was 240px while Fluent's own `Dropdown`
+    carries a hard `min-width: 250px` — so the grid handed out columns
+    narrower than the control that had to sit in them. Only visible at one
+    width (a phone in landscape, which divides into exactly three 244px
+    tracks). Floor raised to 252px.
+  - `globals.css` had `html, body { height: 100% }`, which pinned `<html>`
+    to exactly the viewport so the *document* never scrolled — `<body>`
+    was the scroll container instead. On a phone that's a real defect, not
+    a technicality: mobile browsers only auto-hide the URL bar when the
+    document itself scrolls, so the address bar permanently ate ~60px of
+    an already short viewport. Now `min-height: 100%`. Same reasoning
+    behind switching the shell and login page from `100vh` to `100dvh`.
+- **No `viewport` export was needed** — verified against the served HTML
+  (`curl | grep '<meta'`) rather than assumed in either direction: Next's
+  App Router already emits
+  `<meta name="viewport" content="width=device-width, initial-scale=1">`.
+- **The design reference had nothing to port.** `warden-control-hub` was
+  fetched and checked first per the standing workflow. Its
+  `hooks/use-mobile.tsx` and `components/ui/{sidebar,sheet,drawer}.tsx`
+  are stock Lovable/shadcn boilerplate, referenced only by each other —
+  `components/warden/AppShell.tsx`, the file this app's shell was actually
+  ported from, has the same hard-coded 252px sidebar and zero media
+  queries, and `grep -rn "@media" src/components/warden src/routes` in
+  that repo returns nothing. So the mobile layout here is designed in
+  place, which is a deviation from "port, don't invent" — recorded because
+  the next visual phase should not expect to find it upstream.
+- New i18n keys: `nav.openMenu`, `nav.closeMenu`.
+- Verified: `npm run build`, `npm run lint`, `npx tsc --noEmit` all clean.
+  Rendering verified with headless Chromium (Playwright, `/api/v1/**`
+  route-mocked — there's no backend locally) across every route under
+  `(dashboard)/` plus `/login`, at 390x844, 430x932, 844x390 (landscape),
+  820x1180, 1180x820, 1024x768 and 1440x900, top-of-page and scrolled to
+  the bottom, with a per-element overflow assertion and `pageerror`
+  capture on each. The state-gated views that a plain page load never
+  reaches (Group Administration's member table, Bot View's live feed via a
+  mocked WebSocket, Finance's Budgets/Subscriptions tabs, Reminders'
+  absolute date/time mode) were driven through their real controls. Drawer
+  behaviour was asserted functionally, not just by screenshot: sidebar
+  hidden, one hamburger, 17 links present, Escape closes, link click
+  navigates and dismisses.
+- **Not fixed, pre-existing:** long unbroken strings (a feed URL on
+  `/watches`, a long chat title on `/admin/chats`, an audit `detail`
+  blob) still overflow their fixed-layout table cell. Confirmed
+  pre-existing rather than a regression from this pass because
+  `/admin/chats` flags identically at 1440px desktop. The tables now
+  scroll, so the content is at least reachable; making long values wrap
+  would change desktop rendering too and is a separate call.
+
 ---
 
 ## Cross-cutting things every phase should check

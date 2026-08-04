@@ -1,7 +1,7 @@
 "use client";
 
 import { useChats } from "@/hooks/useAdminDirectory";
-import { clickableRowProps, PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
+import { clickableRowProps, PageHeader, PlatformBadge, Section, TableScroll, useCommonStyles } from "@/components/ui-kit";
 import { t } from "@/lib/i18n";
 import {
   Badge,
@@ -46,42 +46,44 @@ export default function AdminChatsPage() {
             />
           }
         >
-          <Table size="small" aria-label={t("adminChats.tableLabel")}>
-            <TableHeader>
-              <TableRow>
-                <TableHeaderCell>{t("adminChats.columnChat")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminChats.columnPlatform")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminChats.columnMembers")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminChats.columnMessages")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminChats.columnDigest")}</TableHeaderCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((chat) => (
-                <TableRow
-                  key={chat.id}
-                  className={s.clickableRow}
-                  {...clickableRowProps(() => router.push(`/admin/chats/${chat.id}`))}
-                >
-                  <TableCell>
-                    <TableCellLayout>
-                      <Text weight="semibold">{chat.title ?? chat.native_chat_id}</Text>
-                    </TableCellLayout>
-                  </TableCell>
-                  <TableCell>
-                    <PlatformBadge platform={chat.platform} />
-                  </TableCell>
-                  <TableCell>{chat.member_count.toLocaleString()}</TableCell>
-                  <TableCell>{chat.message_count.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Badge appearance="tint" color={chat.digest_enabled ? "success" : "informative"} shape="square">
-                      {chat.digest_enabled ? t("adminChats.digestOn") : t("adminChats.digestOff")}
-                    </Badge>
-                  </TableCell>
+          <TableScroll label={t("adminChats.tableLabel")} minWidth={780}>
+            <Table size="small" aria-label={t("adminChats.tableLabel")}>
+              <TableHeader>
+                <TableRow>
+                  <TableHeaderCell>{t("adminChats.columnChat")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminChats.columnPlatform")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminChats.columnMembers")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminChats.columnMessages")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminChats.columnDigest")}</TableHeaderCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {rows.map((chat) => (
+                  <TableRow
+                    key={chat.id}
+                    className={s.clickableRow}
+                    {...clickableRowProps(() => router.push(`/admin/chats/${chat.id}`))}
+                  >
+                    <TableCell>
+                      <TableCellLayout>
+                        <Text weight="semibold">{chat.title ?? chat.native_chat_id}</Text>
+                      </TableCellLayout>
+                    </TableCell>
+                    <TableCell>
+                      <PlatformBadge platform={chat.platform} />
+                    </TableCell>
+                    <TableCell>{chat.member_count.toLocaleString()}</TableCell>
+                    <TableCell>{chat.message_count.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge appearance="tint" color={chat.digest_enabled ? "success" : "informative"} shape="square">
+                        {chat.digest_enabled ? t("adminChats.digestOn") : t("adminChats.digestOff")}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableScroll>
         </Section>
       )}
     </div>

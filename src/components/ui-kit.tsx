@@ -1,7 +1,8 @@
 "use client";
 
 import { Badge, Body1, Button, Caption1, Card, Subtitle1, Title3, makeStyles, shorthands, tokens } from "@fluentui/react-components";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import { media } from "@/lib/breakpoints";
 
 /**
  * Shared layout primitives used across every real page -- ported from the
@@ -9,6 +10,11 @@ import type { KeyboardEvent, ReactNode } from "react";
  * (2026-07-28, updated to its "Fluent 2 UI" pass 2026-08-02) rather than
  * each page inventing its own spacing/card conventions, which is what led
  * to the previous, less consistent look.
+ *
+ * The `media.narrow` blocks (Phase 10) are why every page got responsive
+ * for free: because each page already composes `page`/`tiles`/`section`/
+ * `formGrid`/`listRow` from here rather than rolling its own spacing, one
+ * edit per primitive reflows all of them consistently.
  */
 export const useCommonStyles = makeStyles({
   page: {
@@ -28,10 +34,15 @@ export const useCommonStyles = makeStyles({
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
     gap: "12px",
+    // 180px floors out to a single column on a phone (a 358px content box
+    // minus the 12px gap leaves 173px each), turning six stats into six
+    // full-width blocks you have to scroll past. 140px keeps them two-up.
+    [media.narrow]: { gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "10px" },
   },
   // Fluent 2 card: 8px radius, hairline stroke, layer background, no heavy shadow.
   tile: {
     ...shorthands.padding("16px"),
+    minWidth: 0,
     display: "flex",
     flexDirection: "column",
     gap: "2px",
@@ -45,6 +56,7 @@ export const useCommonStyles = makeStyles({
     lineHeight: "34px",
     fontWeight: 600,
     letterSpacing: "-0.5px",
+    [media.narrow]: { fontSize: "24px", lineHeight: "28px" },
   },
   section: {
     ...shorthands.padding("20px"),
@@ -55,18 +67,33 @@ export const useCommonStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground1,
     ...shorthands.border("1px", "solid", tokens.colorNeutralStroke2),
     boxShadow: "none",
+    minWidth: 0,
+    [media.narrow]: { ...shorthands.padding("14px"), gap: "12px" },
   },
   sectionHeader: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: "12px",
+    // Several sections put a SearchBox/Button in `action`; without this
+    // the title and a ~240px search field fight over a 320px phone row
+    // and both get squashed rather than one dropping to its own line.
+    flexWrap: "wrap",
   },
   row: { display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" },
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    // 252px, not 240px: Fluent's own `Dropdown`/`Combobox` carry a hard
+    // `min-width: 250px`, so a 240px floor lets the grid hand out tracks
+    // narrower than the control that has to sit in them -- which showed up
+    // as a 7px overflow on a phone in landscape, the width that happens to
+    // divide into exactly three 244px columns.
+    gridTemplateColumns: "repeat(auto-fit, minmax(252px, 1fr))",
     gap: "16px",
+    // `minmax(252px, …)` is a *floor*, so on a container narrower than
+    // that the track overflows instead of shrinking -- explicit single
+    // column below the narrow breakpoint rather than relying on luck.
+    [media.narrow]: { gridTemplateColumns: "1fr", gap: "12px" },
   },
   listRow: {
     display: "flex",
@@ -75,7 +102,31 @@ export const useCommonStyles = makeStyles({
     gap: "12px",
     ...shorthands.padding("10px", "12px"),
     ...shorthands.borderBottom("1px", "solid", tokens.colorNeutralStroke2),
+    minWidth: 0,
+    // These are "label on the left, value/control on the right" rows. At
+    // phone width the two halves have nothing left to give, so they stack
+    // instead of each being crushed to a few characters.
+    [media.narrow]: {
+      flexDirection: "column",
+      alignItems: "stretch",
+      gap: "6px",
+      ...shorthands.padding("10px", "4px"),
+    },
   },
+  /**
+   * Wrapper that makes a Fluent `Table` horizontally scrollable -- see
+   * `TableScroll` below for why this is the fix rather than trying to
+   * make the columns themselves narrower.
+   */
+  tableScroll: {
+    overflowX: "auto",
+    // Griffel emits this as a real child selector; `> table` targets the
+    // native <table> Fluent's `Table` renders (it only becomes a set of
+    // divs under `noNativeElements`, which nothing here uses).
+    "& > table": { minWidth: "var(--warden-table-min-width, 640px)" },
+  },
+  /** Same idea for any single non-wrapping strip (e.g. a `TabList`). */
+  scrollX: { overflowX: "auto", maxWidth: "100%" },
   muted: { color: tokens.colorNeutralForeground3 },
   clickableRow: { cursor: "pointer" },
   accentBar: {
@@ -128,6 +179,43 @@ export function Section({ title, action, children }: { title: string; action?: R
       </div>
       {children}
     </Card>
+  );
+}
+
+/**
+ * Horizontal-scroll wrapper for a Fluent `Table` (Phase 10).
+ *
+ * Fluent's `Table` is `width: 100%; table-layout: fixed`, which means it
+ * *never* overflows -- it silently divides whatever width it's given by
+ * the column count. On a 358px phone content box a six-column expense
+ * table gets ~60px per column, and every cell degrades into a vertical
+ * stack of one or two characters per line. That's why "the tables are
+ * broken on mobile" doesn't show up as a horizontal scrollbar anywhere.
+ *
+ * So the fix isn't narrower columns, it's a *floor*: `minWidth` keeps the
+ * table at a legible size and this wrapper scrolls it. Deliberately not
+ * the popular alternative of collapsing each row into a stacked card at
+ * phone width -- that would mean rewriting all thirteen tables and giving
+ * up the real `<table>` semantics Phase 7's accessibility pass just
+ * finished getting right.
+ *
+ * `label` names the scroll region and `tabIndex` makes it focusable,
+ * because a scrollable area that can only be panned by touch/trackpad is
+ * unreachable for keyboard-only users (WCAG 2.1.1). Pass the section
+ * title the table already sits under -- no new string needed.
+ */
+export function TableScroll({ label, minWidth = 640, children }: { label: string; minWidth?: number; children: ReactNode }) {
+  const s = useCommonStyles();
+  return (
+    <div
+      className={s.tableScroll}
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+      style={{ "--warden-table-min-width": `${minWidth}px` } as CSSProperties}
+    >
+      {children}
+    </div>
   );
 }
 

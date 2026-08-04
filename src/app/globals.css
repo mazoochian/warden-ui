@@ -16,9 +16,16 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
+/* `min-height`, not `height` (Phase 10). A fixed `height: 100%` pinned
+   <html> to exactly the viewport, so the *document* never scrolled and
+   <body> became the scroll container instead. On a phone that's a real
+   defect, not a technicality: mobile browsers only auto-hide the URL bar
+   when the document itself scrolls, so the address bar stayed on screen
+   permanently and ate ~60px of an already short viewport. `min-height`
+   lets the document grow past the viewport and scroll normally. */
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   max-width: 100vw;
   overflow-x: hidden;
 }

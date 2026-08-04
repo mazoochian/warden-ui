@@ -15,7 +15,7 @@ import {
   TableRow,
   Text,
 } from "@fluentui/react-components";
-import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { EmptyState, PageHeader, Section, TableScroll, useCommonStyles } from "@/components/ui-kit";
 import { t } from "@/lib/i18n";
 import { useAuditLog } from "@/hooks/useAuditLog";
 
@@ -39,7 +39,10 @@ export default function AuditLogPage() {
       <PageHeader title={t("adminAuditLog.title")} description={t("adminAuditLog.description")} />
 
       <Section title={t("adminAuditLog.filter")}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {/* `s.row` rather than a bare flex div so the Clear button can drop
+            to its own line instead of squeezing the field, and the fixed
+            260px minimum becomes a flex basis that can shrink below it. */}
+        <div className={s.row}>
           <Input
             aria-label={t("adminAuditLog.filterLabel")}
             placeholder={t("adminAuditLog.filterPlaceholder")}
@@ -48,7 +51,7 @@ export default function AuditLogPage() {
               setActionFilter(data.value);
               resetPaging();
             }}
-            style={{ minWidth: "260px" }}
+            style={{ flex: "1 1 200px", minWidth: 0 }}
           />
           {actionFilter && (
             <Button
@@ -68,40 +71,42 @@ export default function AuditLogPage() {
         {isLoading && <Body1 className={s.muted}>{t("adminAuditLog.loading")}</Body1>}
         {!isLoading && (data?.items.length ?? 0) === 0 && <EmptyState text={t("adminAuditLog.none")} />}
         {!isLoading && (data?.items.length ?? 0) > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHeaderCell>{t("adminAuditLog.columnWhen")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminAuditLog.columnAccount")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminAuditLog.columnAction")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminAuditLog.columnTarget")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminAuditLog.columnDetail")}</TableHeaderCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.items.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell>
-                    <Caption1>{formatAt(e.at)}</Caption1>
-                  </TableCell>
-                  <TableCell>
-                    <TableCellLayout>{e.account_id ?? <Caption1 className={s.muted}>{t("adminAuditLog.system")}</Caption1>}</TableCellLayout>
-                  </TableCell>
-                  <TableCell>
-                    <Text weight="semibold">{e.action}</Text>
-                  </TableCell>
-                  <TableCell>{e.target ?? <Caption1 className={s.muted}>{t("adminAuditLog.dash")}</Caption1>}</TableCell>
-                  <TableCell>
-                    {e.detail ? (
-                      <Caption1 style={{ fontFamily: "monospace", wordBreak: "break-all" }}>{e.detail}</Caption1>
-                    ) : (
-                      <Caption1 className={s.muted}>{t("adminAuditLog.dash")}</Caption1>
-                    )}
-                  </TableCell>
+          <TableScroll label={t("adminAuditLog.entries")} minWidth={900}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeaderCell>{t("adminAuditLog.columnWhen")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminAuditLog.columnAccount")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminAuditLog.columnAction")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminAuditLog.columnTarget")}</TableHeaderCell>
+                  <TableHeaderCell>{t("adminAuditLog.columnDetail")}</TableHeaderCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data?.items.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>
+                      <Caption1>{formatAt(e.at)}</Caption1>
+                    </TableCell>
+                    <TableCell>
+                      <TableCellLayout>{e.account_id ?? <Caption1 className={s.muted}>{t("adminAuditLog.system")}</Caption1>}</TableCellLayout>
+                    </TableCell>
+                    <TableCell>
+                      <Text weight="semibold">{e.action}</Text>
+                    </TableCell>
+                    <TableCell>{e.target ?? <Caption1 className={s.muted}>{t("adminAuditLog.dash")}</Caption1>}</TableCell>
+                    <TableCell>
+                      {e.detail ? (
+                        <Caption1 style={{ fontFamily: "monospace", wordBreak: "break-all" }}>{e.detail}</Caption1>
+                      ) : (
+                        <Caption1 className={s.muted}>{t("adminAuditLog.dash")}</Caption1>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableScroll>
         )}
 
         <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>

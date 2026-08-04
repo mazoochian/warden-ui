@@ -21,7 +21,7 @@ import {
   TableRow,
   Text,
 } from "@fluentui/react-components";
-import { EmptyState, PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { EmptyState, PageHeader, Section, TableScroll, useCommonStyles } from "@/components/ui-kit";
 import { useMyChats } from "@/hooks/useMyChats";
 import { ApiError } from "@/lib/api";
 import { t } from "@/lib/i18n";
@@ -95,36 +95,38 @@ export default function WatchesPage() {
         {isError && <Body1>{t("watches.loadFailed")}</Body1>}
         {data && data.items.length === 0 && <EmptyState text={t("watches.none")} />}
         {data && data.items.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHeaderCell>{t("watches.columnChat")}</TableHeaderCell>
-                <TableHeaderCell>{t("watches.columnFeed")}</TableHeaderCell>
-                <TableHeaderCell />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((w) => (
-                <TableRow key={w.id}>
-                  <TableCell>
-                    <TableCellLayout>
-                      <Text weight="semibold">{w.chat_title ?? `Chat #${w.chat_id}`}</Text>
-                    </TableCellLayout>
-                  </TableCell>
-                  <TableCell>
-                    <Link href={w.feed_url} target="_blank" rel="noreferrer">
-                      {w.feed_url}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Button size="small" onClick={() => deleteWatch.mutate(w.id)} disabled={deleteWatch.isPending}>
-                      {t("watches.unwatch")}
-                    </Button>
-                  </TableCell>
+          <TableScroll label={t("watches.watching")} minWidth={640}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeaderCell>{t("watches.columnChat")}</TableHeaderCell>
+                  <TableHeaderCell>{t("watches.columnFeed")}</TableHeaderCell>
+                  <TableHeaderCell />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.items.map((w) => (
+                  <TableRow key={w.id}>
+                    <TableCell>
+                      <TableCellLayout>
+                        <Text weight="semibold">{w.chat_title ?? `Chat #${w.chat_id}`}</Text>
+                      </TableCellLayout>
+                    </TableCell>
+                    <TableCell>
+                      <Link href={w.feed_url} target="_blank" rel="noreferrer">
+                        {w.feed_url}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <Button size="small" onClick={() => deleteWatch.mutate(w.id)} disabled={deleteWatch.isPending}>
+                        {t("watches.unwatch")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableScroll>
         )}
       </Section>
     </div>

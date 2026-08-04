@@ -20,7 +20,7 @@ import {
   TableRow,
   Text,
 } from "@fluentui/react-components";
-import { EmptyState, PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
+import { EmptyState, PageHeader, Section, TableScroll, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
 import { useMyChats } from "@/hooks/useMyChats";
 import { ApiError } from "@/lib/api";
 import { t } from "@/lib/i18n";
@@ -125,38 +125,40 @@ export default function AlertsPage() {
         {isError && <Body1>{t("alerts.loadFailed")}</Body1>}
         {data && data.items.length === 0 && <EmptyState text={t("alerts.none")} />}
         {data && data.items.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHeaderCell>{t("alerts.columnChat")}</TableHeaderCell>
-                <TableHeaderCell>{t("alerts.columnKind")}</TableHeaderCell>
-                <TableHeaderCell>{t("alerts.columnSubject")}</TableHeaderCell>
-                <TableHeaderCell>{t("alerts.columnCondition")}</TableHeaderCell>
-                <TableHeaderCell />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((al) => (
-                <TableRow key={al.id}>
-                  <TableCell>
-                    <TableCellLayout>
-                      <Text weight="semibold">{al.chat_title ?? `Chat #${al.chat_id}`}</Text>
-                    </TableCellLayout>
-                  </TableCell>
-                  <TableCell>{al.kind}</TableCell>
-                  <TableCell>{al.subject}</TableCell>
-                  <TableCell>
-                    {al.condition} {al.threshold} {unitFor(al.kind)}
-                  </TableCell>
-                  <TableCell>
-                    <Button size="small" onClick={() => cancelAlert.mutate(al.id)} disabled={cancelAlert.isPending}>
-                      {t("alerts.cancel")}
-                    </Button>
-                  </TableCell>
+          <TableScroll label={t("alerts.active")} minWidth={720}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeaderCell>{t("alerts.columnChat")}</TableHeaderCell>
+                  <TableHeaderCell>{t("alerts.columnKind")}</TableHeaderCell>
+                  <TableHeaderCell>{t("alerts.columnSubject")}</TableHeaderCell>
+                  <TableHeaderCell>{t("alerts.columnCondition")}</TableHeaderCell>
+                  <TableHeaderCell />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.items.map((al) => (
+                  <TableRow key={al.id}>
+                    <TableCell>
+                      <TableCellLayout>
+                        <Text weight="semibold">{al.chat_title ?? `Chat #${al.chat_id}`}</Text>
+                      </TableCellLayout>
+                    </TableCell>
+                    <TableCell>{al.kind}</TableCell>
+                    <TableCell>{al.subject}</TableCell>
+                    <TableCell>
+                      {al.condition} {al.threshold} {unitFor(al.kind)}
+                    </TableCell>
+                    <TableCell>
+                      <Button size="small" onClick={() => cancelAlert.mutate(al.id)} disabled={cancelAlert.isPending}>
+                        {t("alerts.cancel")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableScroll>
         )}
       </Section>
     </div>

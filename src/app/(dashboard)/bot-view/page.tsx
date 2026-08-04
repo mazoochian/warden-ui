@@ -112,7 +112,9 @@ export default function BotViewPage() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
-                maxHeight: "420px",
+                // Capped against the viewport too, or the feed alone
+                // is taller than a phone held in landscape (390px).
+                maxHeight: "min(420px, 55vh)",
                 overflowY: "auto",
                 paddingInlineEnd: "4px",
               }}

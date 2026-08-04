@@ -99,6 +99,44 @@ admin act beyond their own messages).
 | `POST /api/v1/notes` | `{chat_id, text, identity_id?}` — mirrors `/note add <text>`. `text` capped at 1000 bytes, same as the command. Gated by the `notes` feature flag (already used bot-side by `/note`/`set_note`; also newly added to `feature_flags.known_modules` so it actually shows up as a toggle on `/admin/modules` — it existed as a gate before this but wasn't listed there). |
 | `DELETE /api/v1/notes/:id` | Same authorization as `/note delete`: whoever added it, or the bot owner — **not** "anyone in the chat" like Watches' removal is. |
 
+## Feature parity — Finance (expenses / budgets / subscriptions)
+
+**Implemented (2026-08-03.)** Mirrors warden's `ROADMAP.md` Phase 17
+(`/expense`, `/budget`, `/subscription`), all three gated together behind
+the one `finance` feature flag exactly as the bot gates them.
+
+**Every amount crosses this API as an integer count of cents**
+(`amount_cents`), never a decimal string and never a float — the same
+standard Phase 17 held the bot-side code to. The frontend's
+`src/lib/money.ts` is the only place a user-typed decimal is interpreted,
+and it converts via string manipulation rather than `parseFloat` (see that
+file's doc comment for the `1.005 * 100 = 100.49999999999999` failure mode
+it exists to avoid).
+
+Two scoping models, mirroring the bot rather than being uniform for its own
+sake: **expenses and subscriptions are identity-scoped** ("my spending
+across every chat", like Reminders/Alerts/Watches/Notes above), while
+**budgets and the summary are chat-scoped**, because a budget is chat-wide
+policy — "am I over budget" is only meaningful against the whole chat's
+spending, which is what `/expense summary` already reports in chat.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/expenses?chat_id=&identity_id=&category=&since=&limit=` | `{items: [{id, chat_id, chat_title, amount_cents, currency, category, description, created_at}]}`. New `expenses.ExpenseForIdentity`/`listForIdentity` in warden's store layer, added alongside this endpoint (Phase 17 only shipped the chat-scoped `listForChat` the bot commands needed, same gap Notes had). `category` is percent-decoded server-side — the pre-existing `queryParam` helper returns raw slices, which every caller before this one only ever parsed integers out of, so a category like `eating out & drinks` would otherwise match nothing. |
+| `POST /api/v1/expenses` | `{chat_id, amount_cents, category, description?, currency?, identity_id?}` — mirrors `/expense add`. Open to anyone in the chat (same `resolveCreateIdentity` authorization as reminders/alerts/notes). `category` ≤ 64 bytes, `description` ≤ 500, `currency` defaults to `USD`. |
+| `DELETE /api/v1/expenses/:id` | Same authorization as `/expense delete`: whoever recorded it, or the bot owner (**not** bot_admin). |
+| `GET /api/v1/expenses/summary?chat_id=&since=` | `{chat_id, total_cents, categories: [{category, total_cents, budget_cents, over}]}` — the web version of `/expense summary`, cross-referencing spend against that chat's budgets. Includes categories that have a budget but no spending yet, so a configured budget doesn't silently vanish from the panel. Readable by any **member** of the chat (not just a live admin — the bot's own summary is open to the whole chat). `since` is **required from the caller**, not defaulted to "this calendar month" server-side: a month boundary depends on the viewer's UTC offset, which the frontend already has from `GET /api/v1/me/settings` and the API server does not. Omitting it means all time. |
+| `GET /api/v1/budgets?chat_id=` | `{items: [{id, chat_id, category, amount_cents, currency}]}` — mirrors `/budget list`, open to any member of the chat. |
+| `PUT /api/v1/budgets` | `{chat_id, category, amount_cents, currency?}` — mirrors `/budget set`. `PUT`, not `POST`, because `budgets.set` upserts on `(chat_id, category)`: sending the same category twice replaces the amount rather than adding a row. **Owner only**, matching `handleBudgetCommand`'s `auth.isOwner` gate (a budget is chat-wide policy, same tier as a system-prompt override) — bot admins deliberately can't. |
+| `DELETE /api/v1/budgets/:id` | Owner only, as above. Addressed by integer id rather than by category the way `/budget remove <category>` is — a category is free text that can contain spaces and `&`, and an integer id sidesteps the URL-encoding question entirely. New `budgets.getById`/`removeById` in the store layer for this. |
+| `GET /api/v1/subscriptions?chat_id=&identity_id=` | `{items: [{id, chat_id, chat_title, name, amount_cents, currency, interval_days, monthly_equivalent_cents, created_at}], monthly_total_cents}` — mirrors `/subscription list`. `monthly_equivalent_cents` is computed server-side via the existing `subscriptions.monthlyEquivalentCents` so the panel can't drift from what the bot reports in chat. New `subscriptions.SubscriptionForIdentity`/`listForIdentity` in the store layer. |
+| `POST /api/v1/subscriptions` | `{chat_id, name, amount_cents, interval_days, currency?, identity_id?}` — mirrors `/subscription add`. Takes `interval_days` as an integer rather than the bot's `1mo`/`2w` shorthand: `parseIntervalDays` lives in `main.zig`, which imports `router.zig` (so importing it back would be circular), and a picker is a better fit for the web anyway. `name` ≤ 128 bytes, `interval_days` 1–36500. |
+| `DELETE /api/v1/subscriptions/:id` | Same authorization as `/subscription remove`: whoever added it, or the bot owner. |
+
+Every mutating endpoint above writes an `audit_log` row (`expense.create`,
+`expense.delete`, `budget.set`, `budget.remove`, `subscription.create`,
+`subscription.delete`), per the standing Phase 0 rule.
+
 ## Feature parity — Convert
 
 | Method & path | Purpose |

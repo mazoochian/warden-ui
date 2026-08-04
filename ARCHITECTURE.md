@@ -366,6 +366,37 @@ indistinguishable from an automated reply.
   built-in RTL support, so this is a "pick it up later without a
   rewrite" situation, not a blocker now.
 
+## 9a. Responsive layout
+
+Added in `ROADMAP.md` Phase 10; recorded here because the breakpoint
+values are a cross-cutting contract every future page has to honour, not
+a one-page decision.
+
+- **Two breakpoints, defined once in `src/lib/breakpoints.ts`:**
+  `compact` = 1024px (the persistent sidebar becomes an overlay drawer
+  below this) and `narrow` = 600px (phone: tighter gutters, single-column
+  form grids, no account name beside the avatar). Deliberately not an
+  `xs/sm/md/lg/xl` scale — there are two layout problems, so five names
+  would be four too many. New pages should import `media` from that
+  module rather than writing raw `@media` strings, so the numbers stay in
+  one place.
+- **Prefer the media query; the hook is the exception.** `media.compact` /
+  `media.narrow` are Griffel at-rule keys and need no JS, no state, and no
+  hydration round-trip. `useIsCompact()` is for behaviour CSS genuinely
+  cannot express — today exactly one caller, `AppShell`'s nav button,
+  which changes what it *does* and how it's announced, not how it looks.
+- **Tables scroll, they don't restack.** Every `Table` goes inside
+  `TableScroll` (`ui-kit.tsx`) with a per-table `minWidth` floor. This is
+  a consequence of Fluent's `Table` being `table-layout: fixed` — it
+  squeezes columns to illegibility instead of overflowing, so a floor plus
+  a scroll container is the fix, and the alternative (collapsing rows into
+  cards on phones) would have cost the real `<table>` semantics §7's
+  accessibility pass established. New data tables should follow suit.
+- **Responsive work must stay RTL-safe.** The drawer uses Fluent's
+  `position="start"`, not `"left"`. Anything anchored to a viewport edge
+  is a place where the logical-properties rule from the i18n/RTL work
+  (§9) is easy to lose by accident.
+
 ## 10. Testing & observability
 
 - Zig-side API code follows the existing repo's own convention: `test {}`

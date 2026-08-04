@@ -2,7 +2,7 @@
 
 import { useInvalidateSession } from "@/hooks/useSession";
 import { SessionListItem, useRevokeSession, useSessions } from "@/hooks/useSessions";
-import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
+import { PageHeader, Section, TableScroll, useCommonStyles } from "@/components/ui-kit";
 import { t } from "@/lib/i18n";
 import {
   Badge,
@@ -80,21 +80,23 @@ export default function AccountPage() {
 
       {data && (
         <Section title={data.items.length === 1 ? t("account.sessionCountOne") : t("account.sessionCountOther", { count: data.items.length })}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHeaderCell>{t("account.columnDevice")}</TableHeaderCell>
-                <TableHeaderCell>{t("account.columnSignedIn")}</TableHeaderCell>
-                <TableHeaderCell>{t("account.columnExpires")}</TableHeaderCell>
-                <TableHeaderCell></TableHeaderCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((session) => (
-                <SessionRow key={session.id} session={session} />
-              ))}
-            </TableBody>
-          </Table>
+          <TableScroll label={t("account.title")} minWidth={760}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeaderCell>{t("account.columnDevice")}</TableHeaderCell>
+                  <TableHeaderCell>{t("account.columnSignedIn")}</TableHeaderCell>
+                  <TableHeaderCell>{t("account.columnExpires")}</TableHeaderCell>
+                  <TableHeaderCell></TableHeaderCell>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.items.map((session) => (
+                  <SessionRow key={session.id} session={session} />
+                ))}
+              </TableBody>
+            </Table>
+          </TableScroll>
         </Section>
       )}
     </div>
