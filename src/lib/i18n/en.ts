@@ -291,6 +291,23 @@ export const en = {
   "settings.timeFormatH12": "12h (AM/PM)",
   "settings.save": "Save",
 
+  "settings.telegramPersonal": "Personal Telegram account",
+  "settings.telegramPersonalHint":
+    "Connect Warden to your own Telegram account (separate from the bot) so it can see your DMs and, later, draft replies on your behalf.",
+  "settings.telegramPersonalNotConfigured": "Not available -- this deployment hasn't set WARDEN_TELEGRAM_USER_API_ID/_API_HASH/_SESSION_DIR.",
+  "settings.telegramPersonalReady": "Connected.",
+  "settings.telegramPersonalPhoneLabel": "Phone number",
+  "settings.telegramPersonalPhoneHint": "Full international format, e.g. +15551234567.",
+  "settings.telegramPersonalPhoneSubmit": "Send code",
+  "settings.telegramPersonalCodeLabel": "Login code",
+  "settings.telegramPersonalCodeHint": "Check your other Telegram sessions (or SMS) for the code Telegram just sent.",
+  "settings.telegramPersonalCodeSubmit": "Submit code",
+  "settings.telegramPersonalPasswordLabel": "2FA password",
+  "settings.telegramPersonalPasswordHint": "Your account's two-factor password (only asked if you have one set).",
+  "settings.telegramPersonalPasswordSubmit": "Submit password",
+  "settings.telegramPersonalOrBot":
+    "You can also drive this from a chat with the bot itself: /tdlogin phone <number>, then /tdlogin code <digits, separated e.g. \"1 2 3 4 5\"> -- typed with spaces on purpose, see /tdlogin status for why.",
+
   // --- Account & Sessions (src/app/(dashboard)/account/page.tsx) ---
   "account.title": "Account & Sessions",
   "account.description": "Every browser currently signed in to your account. Revoking a session ends it immediately, wherever it is.",

@@ -2,6 +2,7 @@
 
 import { MySettings, useMySettings, useSetMySettings } from "@/hooks/useMySettings";
 import { PageHeader, Section, ToggleButtonGroup, useCommonStyles } from "@/components/ui-kit";
+import { TelegramPersonalAccountSection } from "@/components/telegram-personal-account-section";
 import { t } from "@/lib/i18n";
 import { Button, Field, Input, Spinner } from "@fluentui/react-components";
 import { useState } from "react";
@@ -94,6 +95,8 @@ export default function SettingsPage() {
       {isPending && <Spinner label={t("settings.loading")} />}
       {isError && <Section title={t("settings.title")}>{t("settings.loadFailed")}</Section>}
       {data && <SettingsForm key={JSON.stringify(data)} initial={data} />}
+
+      <TelegramPersonalAccountSection />
     </div>
   );
 }
