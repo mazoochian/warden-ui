@@ -21,6 +21,14 @@ export function isAdmin(session: Session | undefined): boolean {
   return !!session?.authenticated && (session.roles.owner || session.roles.bot_admin);
 }
 
+/** Owner specifically, not bot_admin -- the personal-account (TDLib)
+ * endpoints require `roles.owner` on the backend (see warden's
+ * `api/router.zig`'s `requireTelegramUserConnector`), not the broader
+ * `isAdmin` bar every other admin-only page uses. */
+export function isOwner(session: Session | undefined): boolean {
+  return !!session?.authenticated && session.roles.owner;
+}
+
 export const sessionQueryKey = ["session"] as const;
 
 /**

@@ -29,6 +29,8 @@ import {
   BoardSplit24Regular,
   Chat24Filled,
   Chat24Regular,
+  ChatMultiple24Filled,
+  ChatMultiple24Regular,
   ChevronDown20Regular,
   ChevronRight20Regular,
   ClipboardTextLtr24Filled,
@@ -65,7 +67,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import { isAdmin, useInvalidateSession, useSession } from "@/hooks/useSession";
+import { isAdmin, isOwner, useInvalidateSession, useSession } from "@/hooks/useSession";
 import { media, useIsCompact } from "@/lib/breakpoints";
 import { t } from "@/lib/i18n";
 import { ThemeToggle } from "./ThemeToggle";
@@ -250,6 +252,19 @@ const adminItems: NavLeaf[] = [
 
 const dashboardItem: NavLeaf = { to: "/", label: t("nav.dashboard"), icon: <BoardSplit24Regular />, activeIcon: <BoardSplit24Filled />, exact: true };
 const groupsItem: NavLeaf = { to: "/groups", label: t("nav.myGroups"), icon: <PeopleTeam24Regular />, activeIcon: <PeopleTeam24Filled /> };
+// Owner-only, same as `adminItems` -- but gated on `session.roles.owner`
+// specifically, not `isAdmin` (owner || bot_admin): the personal-account
+// endpoints this page calls require `roles.owner` on the backend (see
+// warden's `api/router.zig`'s `requireTelegramUserConnector`), so a
+// bot_admin who isn't the owner would see a link that just 403s. A
+// distinct icon from `/admin/chats`' `Chat24*` avoids two different
+// destinations looking identical in the nav.
+const personalChatsItem: NavLeaf = {
+  to: "/personal-chats",
+  label: t("nav.personalChats"),
+  icon: <ChatMultiple24Regular />,
+  activeIcon: <ChatMultiple24Filled />,
+};
 const settingsItem: NavLeaf = { to: "/settings", label: t("nav.personalSettings"), icon: <Settings24Regular />, activeIcon: <Settings24Filled /> };
 const accountItem: NavLeaf = { to: "/account", label: t("nav.accountSessions"), icon: <Person24Regular />, activeIcon: <Person24Filled /> };
 
@@ -259,7 +274,7 @@ function isActivePath(pathname: string, to: string, exact?: boolean) {
 
 /** Best-match nav label for the current path, for the topbar's section title. */
 function currentSectionLabel(pathname: string): string {
-  const all = [dashboardItem, groupsItem, ...moduleItems, ...adminItems, settingsItem, accountItem];
+  const all = [dashboardItem, groupsItem, ...moduleItems, ...adminItems, personalChatsItem, settingsItem, accountItem];
   const match = all.find((item) => isActivePath(pathname, item.to, item.exact));
   return match?.label ?? t("nav.brand");
 }
@@ -307,6 +322,7 @@ function NavItem({
 function NavContent({
   collapsed,
   admin,
+  owner,
   onNavigate,
   modulesOpen,
   setModulesOpen,
@@ -315,6 +331,7 @@ function NavContent({
 }: {
   collapsed: boolean;
   admin: boolean;
+  owner: boolean;
   onNavigate?: () => void;
   modulesOpen: boolean;
   setModulesOpen: (fn: (open: boolean) => boolean) => void;
@@ -360,6 +377,7 @@ function NavContent({
         ))}
 
       {!collapsed && <Divider style={{ margin: "14px 0 6px" }} />}
+      {owner && <NavItem item={personalChatsItem} collapsed={collapsed} onNavigate={onNavigate} />}
       <NavItem item={settingsItem} collapsed={collapsed} onNavigate={onNavigate} />
       <NavItem item={accountItem} collapsed={collapsed} onNavigate={onNavigate} />
     </>
@@ -397,6 +415,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const invalidateSession = useInvalidateSession();
   const admin = isAdmin(session);
+  const owner = isOwner(session);
   const isCompact = useIsCompact();
 
   // Lazy initializer (not an effect) -- `AppShell` only ever mounts after
@@ -440,7 +459,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const displayName = session?.authenticated ? session.display_name : t("nav.signedOut");
   const sectionLabel = useMemo(() => currentSectionLabel(pathname), [pathname]);
 
-  const navProps = { admin, modulesOpen, setModulesOpen, adminOpen, setAdminOpen };
+  const navProps = { admin, owner, modulesOpen, setModulesOpen, adminOpen, setAdminOpen };
 
   return (
     <div className={s.root}>

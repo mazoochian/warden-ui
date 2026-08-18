@@ -32,6 +32,7 @@ export const en = {
   "nav.adminConfig": "Config",
   "nav.botView": "Bot View",
   "nav.adminAuditLog": "Audit Log",
+  "nav.personalChats": "Personal Chats",
   "nav.personalSettings": "Personal Settings",
   "nav.accountSessions": "Account & Sessions",
   "nav.expand": "Expand navigation",
@@ -307,6 +308,41 @@ export const en = {
   "settings.telegramPersonalPasswordSubmit": "Submit password",
   "settings.telegramPersonalOrBot":
     "You can also drive this from a chat with the bot itself: /tdlogin phone <number>, then /tdlogin code <digits, separated e.g. \"1 2 3 4 5\"> -- typed with spaces on purpose, see /tdlogin status for why.",
+
+  // --- Personal Chats (src/app/(dashboard)/personal-chats/page.tsx) ---
+  "personalChats.title": "Personal Chats",
+  "personalChats.description":
+    "Browse your personal Telegram account's chats, generate an unread summary, or send a message on your behalf.",
+  "personalChats.ownerOnlyDescription": "Browse your personal Telegram account's chats.",
+  "personalChats.ownerOnlyWarning":
+    "Personal Chats is owner-only -- it reaches your own connected Telegram account, not the bot's, so it isn't extended to bot admins the way most other admin actions are.",
+  "personalChats.notConfigured":
+    "Not available -- this deployment hasn't set WARDEN_TELEGRAM_USER_API_ID/_API_HASH/_SESSION_DIR.",
+  "personalChats.notReady": "Your personal account isn't logged in yet.",
+  "personalChats.notReadyLink": "Connect it in Settings.",
+  "personalChats.loading": "Loading...",
+  "personalChats.loadFailed": "Failed to load chats.",
+  "personalChats.empty": "No chats known yet -- send or receive a message on the personal account first.",
+  "personalChats.countOne": "1 chat",
+  "personalChats.countOther": "{{count}} chats",
+  "personalChats.filterLabel": "Filter chats",
+  "personalChats.filterPlaceholder": "Filter",
+  "personalChats.tableLabel": "Chats",
+  "personalChats.columnChat": "Chat",
+  "personalChats.columnActions": "Actions",
+  "personalChats.summarizeButton": "Summarize",
+  "personalChats.summarizeTitle": "Summarize \"{{chat}}\"",
+  "personalChats.summarizeHint": "Fetches this chat's unread messages, summarizes them, and marks them read.",
+  "personalChats.summarizing": "Summarizing...",
+  "personalChats.summarizeFailed": "Failed to summarize this chat.",
+  "personalChats.sendButton": "Send message",
+  "personalChats.sendTitle": "Send to \"{{chat}}\"",
+  "personalChats.messageLabel": "Message",
+  "personalChats.messagePlaceholder": "Type a message...",
+  "personalChats.sending": "Sending...",
+  "personalChats.sendFailed": "Failed to send.",
+  "personalChats.close": "Close",
+  "personalChats.cancel": "Cancel",
 
   // --- Account & Sessions (src/app/(dashboard)/account/page.tsx) ---
   "account.title": "Account & Sessions",
