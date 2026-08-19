@@ -24,11 +24,13 @@ export function useTelegramUserChats(query: string) {
   });
 }
 
-/** Fetches a chat's unread messages, has the model summarize them, and
- * marks them read as a side effect -- same action `/tdsummary` performs in
- * Telegram itself. */
+/** Fetches a chat's messages and has the model summarize them -- same
+ * action `/tdsummary` performs in Telegram itself. `all: true` fetches the
+ * last 100 messages regardless of read state instead of just unread ones
+ * (no mark-as-read side effect in that mode) -- `/tdsummary <chat> --all`'s
+ * counterpart. */
 export function useSummarizeTelegramUserChat() {
-  return useMutation<{ summary: string }, ApiError, { chat_id: string }>({
+  return useMutation<{ summary: string }, ApiError, { chat_id: string; all?: boolean }>({
     mutationFn: (body) =>
       apiFetch<{ summary: string }>("/api/v1/telegram-user/chats/summarize", {
         method: "POST",

@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Body1,
   Button,
+  Caption1,
   Dialog,
   DialogActions,
   DialogBody,
@@ -177,6 +178,16 @@ function SummarizeDialog({ target, onClose }: { target: TelegramUserChat | null;
 
 function SummarizeDialogBody({ target, onClose }: { target: TelegramUserChat; onClose: () => void }) {
   const summarize = useSummarizeTelegramUserChat();
+  // Both buttons below share one mutation -- this is what the result
+  // actually reflects, so the "now marked read"/"last 100" framing next
+  // to the result text matches whichever one was actually clicked rather
+  // than always describing the default (unread) mode.
+  const [mode, setMode] = useState<"unread" | "all" | null>(null);
+
+  const run = (all: boolean) => {
+    setMode(all ? "all" : "unread");
+    summarize.mutate({ chat_id: target.native_chat_id, all });
+  };
 
   return (
     <DialogBody>
@@ -185,24 +196,29 @@ function SummarizeDialogBody({ target, onClose }: { target: TelegramUserChat; on
         {!summarize.data && !summarize.isPending && !summarize.isError && (
           <Body1>{t("personalChats.summarizeHint")}</Body1>
         )}
-        {summarize.isPending && <Spinner label={t("personalChats.summarizing")} />}
+        {summarize.isPending && (
+          <Spinner label={mode === "all" ? t("personalChats.summarizingAll") : t("personalChats.summarizing")} />
+        )}
         {summarize.isError && (
           <MessageBar intent="error">
             <MessageBarBody>{errorMessage(summarize.error, t("personalChats.summarizeFailed"))}</MessageBarBody>
           </MessageBar>
         )}
         {summarize.data && (
-          <div
-            style={{
-              marginTop: "10px",
-              padding: "10px",
-              borderRadius: "4px",
-              background: "var(--colorNeutralBackground3, #f3f2f1)",
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {summarize.data.summary}
-          </div>
+          <>
+            <Caption1>{mode === "all" ? t("personalChats.summarizeAllNote") : t("personalChats.summarizeUnreadNote")}</Caption1>
+            <div
+              style={{
+                marginTop: "10px",
+                padding: "10px",
+                borderRadius: "4px",
+                background: "var(--colorNeutralBackground3, #f3f2f1)",
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {summarize.data.summary}
+            </div>
+          </>
         )}
       </DialogContent>
       <DialogActions>
@@ -210,13 +226,14 @@ function SummarizeDialogBody({ target, onClose }: { target: TelegramUserChat; on
           {t("personalChats.close")}
         </Button>
         {!summarize.data && (
-          <Button
-            appearance="primary"
-            disabled={summarize.isPending}
-            onClick={() => summarize.mutate({ chat_id: target.native_chat_id })}
-          >
-            {summarize.isPending ? t("personalChats.summarizing") : t("personalChats.summarizeButton")}
-          </Button>
+          <>
+            <Button appearance="secondary" disabled={summarize.isPending} onClick={() => run(true)}>
+              {t("personalChats.summarizeAllButton")}
+            </Button>
+            <Button appearance="primary" disabled={summarize.isPending} onClick={() => run(false)}>
+              {summarize.isPending ? t("personalChats.summarizing") : t("personalChats.summarizeButton")}
+            </Button>
+          </>
         )}
       </DialogActions>
     </DialogBody>
