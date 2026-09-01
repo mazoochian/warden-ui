@@ -962,11 +962,20 @@ the bot.*
   three-column form grid; given its own full-width grid row, it now sits
   on one line. `npm run build` and `npm run lint` (warden-ui side) both
   clean.
-- **Backend verification**: `zig build` clean. `zig build test` — a run
-  was in progress at the time this entry was written; given this phase's
-  changes touch `main.zig`/`server.zig` (not just `router.zig`), re-run
-  it and update this note with a real pass/fail before merging, rather
-  than assuming the same DB-contention pattern Phases 11/12/15/16 hit.
+- **Backend verification**: `zig build` clean. `zig build test`: 20
+  failures this run, in yet another completely disjoint set of files
+  (`accounts.zig`/`admin_directory.zig`/`chat_settings.zig`/
+  `identities.zig`/`reminders.zig`/`stats.zig`/`user_settings.zig`/
+  `web_sessions.zig`) — a third independent data point on top of Phases
+  11-12's and 16's, zero overlap across all three runs, and still never
+  landing in a file this phase actually touched (`router.zig`/
+  `server.zig`/`main.zig`/`reply_drafts.zig`). The peer session sharing
+  this machine's dev Postgres instance was still active (`ListAgents`
+  showed it mid-shell-command) at the moment this ran. Three
+  independent, mutually-disjoint failure sets is strong enough evidence
+  to call this DB contention rather than a regression, but it's still
+  not a *clean* run — do one right before merging, ideally with nothing
+  else touching the same Postgres instance.
 
 ---
 
