@@ -50,6 +50,8 @@ import {
   PeopleTeam24Regular,
   Person24Filled,
   Person24Regular,
+  PersonAccounts24Filled,
+  PersonAccounts24Regular,
   PuzzlePiece24Filled,
   PuzzlePiece24Regular,
   Rss24Filled,
@@ -211,6 +213,7 @@ const adminItems: NavLeaf[] = [
   { to: "/admin/modules", label: t("nav.adminModules"), icon: <PuzzlePiece24Regular />, activeIcon: <PuzzlePiece24Filled /> },
   { to: "/admin/config", label: t("nav.adminConfig"), icon: <Key24Regular />, activeIcon: <Key24Filled /> },
   { to: "/bot-view", label: t("nav.botView"), icon: <Bot24Regular />, activeIcon: <Bot24Filled /> },
+  { to: "/personal-account", label: t("nav.personalAccount"), icon: <PersonAccounts24Regular />, activeIcon: <PersonAccounts24Filled /> },
   { to: "/admin/audit-log", label: t("nav.adminAuditLog"), icon: <ClipboardTextLtr24Regular />, activeIcon: <ClipboardTextLtr24Filled /> },
   { to: "/admin/management-rooms", label: t("nav.adminManagementRooms"), icon: <LinkMultiple24Regular />, activeIcon: <LinkMultiple24Filled /> },
 ];

@@ -175,6 +175,34 @@ chat record, so the web API holds the same line.
 | `GET /api/v1/bot-view/ws?chat_id=` | WebSocket upgrade. Subscribes to a live feed of every message `main.zig` records for that chat (via the same read-only tap next to `recordMessage`), from the moment of connection onward — no history replay (`GET` a chat's recent `messages` rows separately to backfill the pane on open). |
 | `POST /api/v1/bot-view/send` | `{chat_id, text}` — calls `connector.sendMessage` for that chat's platform, exactly as any other reply; no parallel send path. Confirmation-gated client-side given what this does; every send is audit-logged server-side (`bot_view.send`) regardless. |
 
+## Personal Account (owner-only — the owner's real Telegram account via TDLib)
+
+Every endpoint here is gated by `requireTelegramUserConnector`: `roles.owner`
+specifically (never `bot_admin`), and `404` (not `403`) if
+`WARDEN_TELEGRAM_USER_*` isn't configured on this deployment at all — from
+the caller's perspective the feature simply doesn't exist there. First
+documented here 2026-09-01 (Phase 10) — the login/chats/summarize/send
+endpoints existed earlier but had no `API.md` coverage or frontend at all
+until this phase.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/telegram-user/status` | `{auth_state}` — one of TDLib's own auth states (`none`, `wait_tdlib_parameters`, `wait_phone_number`, `wait_code`, `wait_password`, `ready`, `logging_out`, `closed`, `unsupported`). |
+| `POST /api/v1/telegram-user/phone` | `{phone_number}` — only accepted while `auth_state == wait_phone_number`. |
+| `POST /api/v1/telegram-user/code` | `{code}` — only accepted while `auth_state == wait_code`. No obfuscation-stripping (unlike the bot-chat command path): this is warden-ui's own HTTPS form, never a Telegram message, so there's nothing for Telegram's phishing detector to have invalidated. |
+| `POST /api/v1/telegram-user/password` | `{password}` — only accepted while `auth_state == wait_password` (2FA accounts only). |
+| `POST /api/v1/telegram-user/logout` | **Implemented (2026-09-01).** Mirrors `/tdlogout`. `409 not_ready` if `auth_state == none` (nothing to log out of yet). |
+| `GET /api/v1/telegram-user/chats[?query=]` | Every known chat (or a title-filtered subset), sorted by title: `{chats: [{native_chat_id, title}]}` — no pagination, a web table just scrolls. |
+| `POST /api/v1/telegram-user/chats/summarize` | `{chat_id, all?}` — mirrors `/tdsummary`. `all: true` is `--all` (last-100 regardless of read state, no mark-as-read); default is the unread-and-mark-read behavior. |
+| `POST /api/v1/telegram-user/chats/send` | `{chat_id, message}` — mirrors `/tdsend`/`/sendas`. |
+| `GET /api/v1/telegram-user/autonomy` | **Implemented (2026-09-01).** `{global}` — the owner's global `reply_autonomy` default (`off`\|`draft`\|`auto`), mirrors `/autonomy`'s no-arg form. Resolved from the caller's own logged-in identity, not `WARDEN_TELEGRAM_OWNER_ID` — `requireTelegramUserConnector` already establishes the caller *is* the owner. |
+| `PATCH /api/v1/telegram-user/autonomy` | **Implemented (2026-09-01).** `{global}` — mirrors `/autonomy <off\|draft\|auto>`. |
+| `GET /api/v1/telegram-user/chats/:nativeChatId/autonomy` | **Implemented (2026-09-01).** `{override, effective}` — `override` is this chat's own setting (`null` if unset), `effective` is what actually applies (the override, or the global default). `404` if Warden has no `chats` row for that native id yet (a message must be exchanged with it first, same as `/autonomy <chat id>`). |
+| `PATCH /api/v1/telegram-user/chats/:nativeChatId/autonomy` | **Implemented (2026-09-01).** `{override}` — `null` clears the override (mirrors `/autonomy <chat id> clear`). |
+| `GET /api/v1/telegram-user/drafts` | **Implemented (2026-09-01).** `{items: [{native_chat_id, chat_title, draft_text}]}` — mirrors `/drafts`, reading the same process-lifetime `PendingDrafts` instance the bot-chat commands and the `reply_autonomy = .draft` send path share. |
+| `POST /api/v1/telegram-user/chats/:nativeChatId/draft/approve` | **Implemented (2026-09-01).** Mirrors `/approve <chat id>` — sends the draft exactly as generated, through the personal-account connector, no parallel send path. `404` if there's no pending draft for that chat (or it expired). |
+| `DELETE /api/v1/telegram-user/chats/:nativeChatId/draft` | **Implemented (2026-09-01).** Mirrors `/discard <chat id>`. |
+
 ## What's deliberately not an endpoint (at least at first)
 
 - Anything touching secrets (§6 of `ARCHITECTURE.md`) — no write path

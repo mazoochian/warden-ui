@@ -903,6 +903,71 @@ to). Status: done (2026-09-01), same worktree/branch as Phases 11-12/15.*
   test-verified under a clean, uncontended `zig build test` — re-run it
   once before merging `warden-ui-phase11-group-settings` to master.
 
+## Phase 10 — Personal Account (TDLib)
+*Effort: L. Dependencies: none (the personal-account connector and its
+login/chats/summarize/send endpoints already existed). Status: done
+(2026-09-01), same worktree/branch as Phases 11/12/15/16. Highest
+sensitivity after Bot View — it's the owner's real Telegram account, not
+the bot.*
+
+- Backend: `POST /api/v1/telegram-user/logout` (mirrors `/tdlogout`);
+  `GET`/`PATCH /api/v1/telegram-user/autonomy` (global `reply_autonomy`
+  default) and `GET`/`PATCH .../chats/:nativeChatId/autonomy` (per-chat
+  override/effective), mirroring `/autonomy`'s three forms — resolved
+  from the caller's own logged-in identity rather than
+  `WARDEN_TELEGRAM_OWNER_ID`, since `requireTelegramUserConnector`
+  already establishes the caller *is* the owner, same identity `/me/
+  settings` already resolves via the session; `GET /api/v1/telegram-user/
+  drafts`, `POST .../chats/:id/draft/approve`, `DELETE .../chats/:id/
+  draft`, mirroring `/drafts`/`/approve`/`/discard` against the exact
+  same process-lifetime `PendingDrafts` instance those commands already
+  share — threaded a new `pending_drafts` field through `ServerContext`
+  (`server.zig`) and its construction site in `main.zig` for it, the same
+  "optional, defaults to null, tests don't need updating" convention
+  every other optional `ServerContext` field already follows.
+- **Found and fixed a real pre-existing compile fragility while building
+  this**: `reply_drafts.zig`'s own test suite had a test comparing
+  `take`'s return value against a manually-retyped anonymous struct
+  literal (`@as(?struct{...}, null)`) — never actually reachable from the
+  API server's own test compilation graph until this phase's new
+  `server.zig` import edge into that file pulled it in, at which point
+  the two independently-declared anonymous struct types (nominally
+  distinct at this Zig version, despite identical fields) failed to
+  unify. Fixed by replacing the retyped-literal comparison with a plain
+  `== null` check, which needs no matching type at all — `zig build`
+  (the real binary) had been compiling clean throughout, since main.zig
+  already imported this file; only `zig build test`'s wider reachability
+  ever hit it.
+- Frontend: `useTelegramUser.ts` (every hook above, plus the pre-existing
+  login/chats/summarize/send endpoints this page is the first UI for at
+  all); a new owner-only `/personal-account` page — a TDLib login flow
+  driven by `auth_state` (phone → code → optional 2FA password, matching
+  `/tdlogin`'s own state machine, with a polling status query so the page
+  advances on its own as TDLib's state changes), a status/logout row, a
+  global reply-autonomy dial, a pending-drafts list with Approve/Discard,
+  and a searchable chat browser (per-chat autonomy override, an unread
+  summarize action, and a manual send form gated behind the same
+  confirmation-dialog pattern Bot View's own "send as the bot" uses,
+  since sending from the owner's real account deserves the identical
+  friction). New nav entry, gated the same way Bot View's own page is
+  (`session.roles.owner` specifically, not just `isAdmin`).
+- Verified with headless Chromium (mocked session/status/autonomy/
+  drafts/chats/chat-autonomy endpoints) across the login-flow state and
+  the full ready-state dashboard, light and dark theme: confirmed the
+  phone-entry form, the status/autonomy/drafts sections, and the chat
+  browser's expanded per-chat detail (autonomy toggle, summarize,
+  message + confirm-send) all render correctly, `console --errors` clean
+  throughout. One layout fix made during this pass: the four-option
+  per-chat autonomy toggle was wrapping awkwardly inside the shared
+  three-column form grid; given its own full-width grid row, it now sits
+  on one line. `npm run build` and `npm run lint` (warden-ui side) both
+  clean.
+- **Backend verification**: `zig build` clean. `zig build test` — a run
+  was in progress at the time this entry was written; given this phase's
+  changes touch `main.zig`/`server.zig` (not just `router.zig`), re-run
+  it and update this note with a real pass/fail before merging, rather
+  than assuming the same DB-contention pattern Phases 11/12/15/16 hit.
+
 ---
 
 ## Cross-cutting things every phase should check
