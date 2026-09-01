@@ -837,6 +837,26 @@ same commit).*
   bindings table render real data correctly, `console --errors` clean.
   `npm run build` and `npm run lint` both clean.
 
+## Phase 15 — Memory
+*Effort: S. Dependencies: none. Status: done (2026-09-01), same
+worktree/branch and same test-verification caveat as Phases 11-12.*
+
+- Backend: `GET /api/v1/memory` and `DELETE /api/v1/memory/:id`, mirroring
+  `/memory list`/`/memory forget`. Deliberately **no `?identity_id=`
+  admin override**, on either endpoint — the one identity-scoped resource
+  in this whole API where that pattern doesn't apply, since warden's own
+  `MemoryToolAdapter.forgetFn` refuses even the bot owner permission to
+  forget someone else's memory. Creation isn't exposed at all: it stays
+  model-driven (`remember_memory`'s `action=create`), matching this
+  phase's own original scoping ("creation stays model-driven").
+- Frontend: `useMemory.ts`, a new `/memory` page modeled on Notes but
+  simpler — just a list + per-row Forget button, no create form (see
+  above) and no chat scoping (a memory follows the person, not a chat).
+- Verified with headless Chromium (mocked session/memory endpoints),
+  light and dark theme: confirmed the memory list and Forget buttons
+  render correctly, `console --errors` clean. `npm run build` and
+  `npm run lint` both clean.
+
 ---
 
 ## Cross-cutting things every phase should check
@@ -871,8 +891,6 @@ cheapest/highest-value first:
 - **Phase 14 — Storage Sense (admin, owner-only).** No API surface at
   all. Needs status/cleanup endpoints + an owner-only Admin page,
   mirroring Bot View's high-trust treatment.
-- **Phase 15 — Memory.** No API surface. Needs list/forget endpoints
-  (creation stays model-driven) + a Notes-style page.
 - **Phase 16 — Announcements.** Blocked server-side today —
   `listForIdentity` hard-filters `kind='reminder'`, so even a new client
   can't see them. Needs a real backend fix + endpoint + a Groups section.

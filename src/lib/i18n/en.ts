@@ -23,6 +23,7 @@ export const en = {
   "nav.alerts": "Alerts",
   "nav.watches": "Watches",
   "nav.notes": "Notes",
+  "nav.memory": "Memory",
   "nav.finance": "Finance",
   "nav.convert": "Convert",
   "nav.groupAdministration": "Group Administration",
@@ -179,6 +180,16 @@ export const en = {
   "notes.columnAdded": "Added",
   "notes.delete": "Delete",
   "notes.chatFallback": "Chat #{{id}}",
+
+  // --- Memory (src/app/(dashboard)/memory/page.tsx) ---
+  "memory.title": "Memory",
+  "memory.description":
+    "Facts Warden remembers about you across every chat -- mirrors /memory. Only you can forget your own memories, not even the bot owner can on your behalf. Creating a new memory is model-driven (say what to remember and Warden decides whether it's worth keeping), not a form here.",
+  "memory.saved": "Saved",
+  "memory.loading": "Loading memories...",
+  "memory.loadFailed": "Failed to load memories.",
+  "memory.none": "No memories saved yet.",
+  "memory.forget": "Forget",
 
   // --- Finance (src/app/(dashboard)/finance/page.tsx) ---
   "finance.title": "Finance",

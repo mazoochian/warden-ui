@@ -123,6 +123,20 @@ conversion.
 | `POST /api/v1/subscriptions` | Mirrors `/subscription add <name> <amount> every <interval>` — takes `interval_days` as a plain integer rather than the bot's `1mo`/`2w` shorthand, since a picker is a better web fit than re-parsing that shorthand client-side. |
 | `DELETE /api/v1/subscriptions/:id` | Same authorization as `/subscription remove`: whoever added it, or the bot owner. |
 
+## Feature parity — Memory
+
+Unlike every other identity-scoped resource on this page, **neither
+endpoint takes a `?identity_id=` admin override**. warden's own
+`/memory forget` refuses even the bot owner permission to forget someone
+else's memory (`mem.identity_id != self.identity_id`, no `isOwner`
+fallback) — a memory is a private fact about one person, not a shared
+chat record, so the web API holds the same line.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/memory` | **Implemented (2026-09-01).** `{items: [{id, identity_id, text, created_at}]}` — mirrors `/memory list`, strictly the caller's own identity. |
+| `DELETE /api/v1/memory/:id` | **Implemented (2026-09-01).** Mirrors `/memory forget` — only an identity linked to the caller's own account. Creation isn't exposed here at all: it's model-driven (`remember_memory`'s `action=create`), not a form. |
+
 ## Feature parity — Convert
 
 | Method & path | Purpose |
