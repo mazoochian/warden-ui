@@ -36,6 +36,10 @@ import {
   Key24Filled,
   Key24Regular,
   LineHorizontal320Regular,
+  LinkMultiple24Filled,
+  LinkMultiple24Regular,
+  Money24Filled,
+  Money24Regular,
   Note24Filled,
   Note24Regular,
   People24Filled,
@@ -193,6 +197,7 @@ const moduleItems: NavLeaf[] = [
   { to: "/alerts", label: t("nav.alerts"), icon: <Alert24Regular />, activeIcon: <Alert24Filled /> },
   { to: "/watches", label: t("nav.watches"), icon: <Rss24Regular />, activeIcon: <Rss24Filled /> },
   { to: "/notes", label: t("nav.notes"), icon: <Note24Regular />, activeIcon: <Note24Filled /> },
+  { to: "/finance", label: t("nav.finance"), icon: <Money24Regular />, activeIcon: <Money24Filled /> },
   { to: "/convert", label: t("nav.convert"), icon: <DocumentArrowRight24Regular />, activeIcon: <DocumentArrowRight24Filled /> },
   { to: "/moderation", label: t("nav.groupAdministration"), icon: <PeopleTeam24Regular />, activeIcon: <PeopleTeam24Filled /> },
 ];
@@ -204,6 +209,7 @@ const adminItems: NavLeaf[] = [
   { to: "/admin/config", label: t("nav.adminConfig"), icon: <Key24Regular />, activeIcon: <Key24Filled /> },
   { to: "/bot-view", label: t("nav.botView"), icon: <Bot24Regular />, activeIcon: <Bot24Filled /> },
   { to: "/admin/audit-log", label: t("nav.adminAuditLog"), icon: <ClipboardTextLtr24Regular />, activeIcon: <ClipboardTextLtr24Filled /> },
+  { to: "/admin/management-rooms", label: t("nav.adminManagementRooms"), icon: <LinkMultiple24Regular />, activeIcon: <LinkMultiple24Filled /> },
 ];
 
 const dashboardItem: NavLeaf = { to: "/", label: t("nav.dashboard"), icon: <BoardSplit24Regular />, activeIcon: <BoardSplit24Filled />, exact: true };

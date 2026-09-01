@@ -23,6 +23,12 @@ export type ChatSettings = {
   magic_word: string | null;
   digest_enabled: boolean;
   thinking_override: boolean | null;
+  briefing_enabled: boolean;
+  default_location: string | null;
+  welcome_message: string | null;
+  autopin_announcements: boolean;
+  video_download_enabled: boolean;
+  video_download_lossy: boolean;
 };
 
 export function useChatSettings(chatId: number) {

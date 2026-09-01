@@ -690,6 +690,153 @@ web API or frontend of its own, the same "zero frontend story" gap Phase
   clean in the normal checkout (no interference — the Phase 12 work only
   exists in the warden repo).
 
+## Phase 9 — Finance
+*Effort: M. Dependencies: Phase 5a (identity-scoped list pattern). Status:
+done (2026-09-01). Not originally planned — added after a survey of
+warden's own `ROADMAP.md` found its Phase 17 (expenses/budgets/subscriptions)
+had shipped a full HTTP API (`GET/POST/DELETE /api/v1/expenses`,
+`GET /api/v1/expenses/summary`, `GET/PUT/DELETE /api/v1/budgets`,
+`GET/POST/DELETE /api/v1/subscriptions`) with no warden-ui frontend at
+all — despite warden's own roadmap text claiming a "Finance frontend"
+already existed. It didn't; a search for `finance`/`money` across this
+repo before this phase turned up nothing. Same "zero frontend story" gap
+Phase 5a closed for Reminders/Alerts/Watches and Phase 8 closed for Notes.*
+
+- Pure frontend — every endpoint this phase uses already existed
+  server-side, so no warden-repo changes were needed (unlike Phase 8's
+  Notes, which needed a new store function on the warden side first).
+- New `src/lib/money.ts`: `parseAmountCents`/`formatCents`, the
+  decimal-string-to-integer-cents conversion `router.zig`'s own doc
+  comment already assumed would exist here (`validAmountCents`'s
+  neighboring comment references it by name) — every amount crosses the
+  wire as an integer cent count, never a float, on either side.
+- New `src/hooks/useFinance.ts`: `useExpenses`/`useCreateExpense`/
+  `useDeleteExpense`, `useExpenseSummary`, `useBudgets`/`useSetBudget`/
+  `useDeleteBudget`, `useSubscriptions`/`useCreateSubscription`/
+  `useDeleteSubscription` — same shape as `useNotes.ts`.
+- New `/finance` page: an expenses list+add+delete section (identity-scoped
+  across every chat, like Notes), a subscriptions section (same shape,
+  plus a monthly-equivalent badge sourced straight from the API rather
+  than recomputed client-side), and a per-chat budgets section (a chat
+  picker, then a spend-vs-budget table cross-referencing
+  `GET /expenses/summary` against `GET /budgets` for that chat).
+  Budget mutations (`PUT`/`DELETE`) are gated client-side on
+  `session.roles.owner`, matching `handleSetBudget`'s own owner-only check
+  — viewing stays open to any chat member, same split Bot View's
+  owner-vs-admin gating already established.
+- New nav entry (`Money24Regular`/`Filled`) between Notes and Convert.
+- **Found and fixed a real pre-existing bug while smoke-testing this
+  page in a real browser**: `globals.css`'s `html, body { height: 100% }`
+  (there since Phase 1's scaffolding) locks the whole document to exactly
+  one viewport tall — nothing before this phase had ever built a page
+  long enough to overflow one screen, so the page-level scroll being
+  silently dead went uncaught. Confirmed via Playwright
+  (`document.documentElement.scrollHeight` stuck at the viewport's exact
+  height, `window.scrollY` unmovable even after a `mouse.wheel`) before
+  fixing, and again after. Fixed by changing both to `min-height: 100%` —
+  `AppShell`'s own `root` already carries `minHeight: '100vh'` for the
+  short-page case, so nothing regresses there, and long pages (Finance
+  now, anything future) scroll normally.
+- Verified with a real headless-Chromium pass against the dev server
+  (mocked `/api/v1/auth/session`, `/chats?mine=true`,
+  `/expenses`, `/subscriptions`, `/budgets`, `/expenses/summary` — no
+  live warden backend running), in both light and dark theme (an actual
+  theme-toggle click, not a `prefers-color-scheme` context flag, per
+  Phase 4.6's own note that only a real click reliably re-themes):
+  confirmed the expenses table, the subscriptions table with its monthly
+  total badge, and the budgets/spend-vs-budget table all render real
+  data correctly, `console --errors` clean throughout. `npm run build`
+  and `npm run lint` both clean.
+
+## Phase 11 — Extended group settings
+*Effort: M. Dependencies: Phase 4 (Groups settings form to extend).
+Status: backend + frontend done (2026-09-01), backend committed on
+warden's `warden-ui-phase11-group-settings` branch (isolated git
+worktree at `/home/armin/claude/warden-ui-phase11`, not the live
+checkout — see the test-verification note below for why) rather than
+merged to master; not yet PR'd. Surfaces settings that already existed
+in `chat_settings`/`keyword_alerts` with no web story at all, same gap
+Phase 9 closed for Finance.*
+
+- Backend: widened `ChatSettingsBody`/`handleGetChatSettings`/
+  `handleSetChatSettings` in `router.zig` with `briefing_enabled`,
+  `default_location`, `welcome_message`, `autopin_announcements`,
+  `video_download_enabled`, `video_download_lossy`. `welcome_message`/
+  `default_location` are owner-only to change (mirroring `/welcome`/
+  `/location`'s own gate — stricter than this endpoint's normal live-
+  group-admin tier), enforced via a new `optionalStringChanged` helper
+  that only requires `roles.owner` when the submitted value actually
+  differs from what's stored — a group admin submitting the rest of the
+  form unchanged doesn't get rejected just because the whole-object PATCH
+  always carries these two fields.
+- Backend: new `GET`/`POST /api/v1/chats/:id/keyword-alerts` and
+  `DELETE /api/v1/keyword-alerts/:id`, mirroring `/keyword`'s own model —
+  add is open to any chat member (`resolveCreateIdentity`, same as
+  reminders/alerts/notes/expenses), remove is creator-or-owner. Listing
+  reuses `requireChatMember` (already built for Finance's read endpoints,
+  its doc comment updated to note the second caller).
+- Frontend: `useKeywordAlerts.ts`; `groups/[id]/page.tsx`'s settings form
+  grew the six new fields (the two owner-gated ones rendered `disabled`
+  for non-owners rather than hidden — their state is only ever seeded
+  from the loaded settings and never touched while disabled, so a non-
+  owner's save always resubmits them unchanged and the rest of the form
+  still saves), plus a new Keyword Alerts section (list/add/delete) below
+  the settings form.
+- Verified with headless Chromium (mocked session/settings/members/
+  keyword-alerts endpoints) as both an owner and a non-owner live group
+  admin, light and dark theme: confirmed the six new fields render with
+  real data, the owner-only fields are correctly disabled (with a hint
+  explaining why) for the non-owner case, and the keyword-alerts table/
+  add-form work — `console --errors` clean throughout. `npm run build`
+  and `npm run lint` (warden-ui side) both clean.
+- **Backend verification caveat, flagged not silently skipped**:
+  `zig build` is clean (confirmed twice). `zig build test` is not — two
+  separate runs hit 15 failing tests, but every one of them is in a file
+  this phase never touched (`bot_admins.zig`, `chat_members.zig`,
+  `messages.zig`, `server.zig`'s Bot View WS test, etc. — `management_rooms.zig`
+  and the modified `router.zig`/`chat_settings.zig` call sites are not
+  among the failures), and the failure text is a raw Postgres
+  `deadlock detected`/lock-contention error, not an assertion mismatch.
+  A peer session was concurrently running its own build/tests against
+  the exact same shared dev Postgres instance throughout both runs (confirmed
+  via `ListAgents` — session busy the entire time), which is a far more
+  likely explanation than a real regression from six additive `chat_settings`
+  getter/setter calls and two new, independently-tested handlers. Not
+  proven with a clean, uncontended control run, though — worth re-running
+  `zig build test` once nothing else is hitting that Postgres instance,
+  before this branch gets merged.
+
+## Phase 12 — Management Rooms (admin)
+*Effort: S/M. Dependencies: Phase 2 (admin chat directory to pick chats
+from). Status: backend + frontend done (2026-09-01), same worktree/branch
+and same test-verification caveat as Phase 11 above (committed in the
+same commit).*
+
+- `store/management_rooms.zig` already had bind/unbind/list logic
+  (warden's own Phase 9) but zero HTTP route — same "shipped bot-side,
+  no web story" gap as everything else in this stretch of phases. New
+  `management_rooms.listAll` (bot-wide, both sides' titles joined in)
+  since none of the existing per-control-room queries fit an admin
+  overview page that doesn't already know a `control_chat_id` to ask
+  about — added with its own test in the same file, following the same
+  pattern Phase 8 used when `notes.listForIdentity` needed adding
+  warden-side.
+- New `GET`/`POST`/`DELETE /api/v1/admin/management-rooms` — **admin-only
+  (owner/bot_admin)**, deliberately simpler and stricter than `/manage`
+  itself (which authorizes bind/unbind against the *target* chat's live
+  admin status, no bot_admin/owner requirement) — same accepted
+  simplification `chat_settings.digest_enabled` already has (open via the
+  bot command, admin-gated over the web). `DELETE` takes both
+  `control_chat_id`/`target_chat_id` as query params rather than a single
+  id, since a binding has no surrogate id exposed over this API.
+- Frontend: new `/admin/management-rooms` page (bind form sourced from
+  the existing `GET /api/v1/admin/chats` directory, a bindings table with
+  per-row Unbind), new nav entry under Admin.
+- Verified with headless Chromium (mocked session/admin-chats/management-
+  rooms endpoints), light and dark theme: confirmed the bind form and
+  bindings table render real data correctly, `console --errors` clean.
+  `npm run build` and `npm run lint` both clean.
+
 ---
 
 ## Cross-cutting things every phase should check
@@ -703,3 +850,36 @@ web API or frontend of its own, the same "zero frontend story" gap Phase
 - Every permission check reuses an existing `auth.zig` function or the
   live `connector.isGroupAdmin` check — never a new parallel
   authorization path, the same principle `/menu` was already built on.
+
+## Backlog — remaining parity gaps (surveyed 2026-09-01, updated after Phases 11-12)
+
+A full re-survey of warden's `ROADMAP.md` (through its Phase 26) and
+`src/api/router.zig` turned up more gaps than just Finance (Phase 9
+above). Two of warden's own "warden-ui: done" claims turned out false —
+Finance and a "Personal Chats page" — worth remembering that doc's status
+lines aren't reliable without checking this repo directly. Ranked
+cheapest/highest-value first:
+
+- **Phase 10 — Personal Account (TDLib).** Partial API exists
+  (`GET /telegram-user/status`, phone/code/password login, chat
+  list/search, summarize, send). Needs new backend endpoints (autonomy
+  dial, draft approve/discard, logout) plus a new owner-only page. Highest
+  sensitivity after Bot View — it's the owner's real Telegram account.
+- **Phase 13 — Member ACL.** `store/member_permissions.zig` (bitmask +
+  expiry) exists warden-side with zero HTTP route. Needs endpoints +
+  a per-member permission editor on Moderation.
+- **Phase 14 — Storage Sense (admin, owner-only).** No API surface at
+  all. Needs status/cleanup endpoints + an owner-only Admin page,
+  mirroring Bot View's high-trust treatment.
+- **Phase 15 — Memory.** No API surface. Needs list/forget endpoints
+  (creation stays model-driven) + a Notes-style page.
+- **Phase 16 — Announcements.** Blocked server-side today —
+  `listForIdentity` hard-filters `kind='reminder'`, so even a new client
+  can't see them. Needs a real backend fix + endpoint + a Groups section.
+
+Not planned as their own phases: group identity (photo/title/description)
+— deliberately left out of Phase 11's scope, small enough to fold into
+Groups settings later if there's appetite; polls and on-demand `/summary`
+as standalone buttons are low enough value to skip; everything chat-native
+-only (messaging modes, power tools, silent/phantom flags, the `/as` relay
+grammar itself) has no sensible web equivalent.

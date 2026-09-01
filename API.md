@@ -77,9 +77,12 @@ pages requires a valid session cookie; requests without one get `401`.
 | Method & path | Purpose |
 |---|---|
 | `GET /api/v1/chats?mine=true` | **Implemented (2026-07-28).** Chats the caller can manage: `{items: [{id, platform, native_chat_id, title, is_group_admin}]}` — every chat for owner/bot_admin, or only chats the caller is both a member of and currently a *live* platform admin of otherwise. `?mine=true` is the only supported mode (the query param is accepted but not actually inspected — there's no other listing shape yet). |
-| `GET /api/v1/chats/:id/settings` | **Implemented (2026-07-28).** `{persona, magic_word, digest_enabled, thinking_override}` — `chat_settings` as-is. |
-| `PATCH /api/v1/chats/:id/settings` | **Implemented (2026-07-28).** Body is the *whole* settings object, not a sparse partial update (JSON can't cleanly distinguish "field omitted" from "field explicitly null" without a wrapper type, and a settings-form PATCH naturally submits every field anyway) — same effect as `/persona`, `/magicword`, `/thinking`, `/digest`. |
+| `GET /api/v1/chats/:id/settings` | **Implemented (2026-07-28), widened (2026-09-01).** `{persona, magic_word, digest_enabled, thinking_override, briefing_enabled, default_location, welcome_message, autopin_announcements, video_download_enabled, video_download_lossy}` — `chat_settings` as-is. The 2026-09-01 fields close the gap warden's own Phases 13/16/25 opened (those features shipped bot-side with no web story at all). |
+| `PATCH /api/v1/chats/:id/settings` | **Implemented (2026-07-28), widened (2026-09-01).** Body is the *whole* settings object, not a sparse partial update (JSON can't cleanly distinguish "field omitted" from "field explicitly null" without a wrapper type, and a settings-form PATCH naturally submits every field anyway) — same effect as `/persona`, `/magicword`, `/thinking`, `/digest`, `/briefing`, `/location`, `/welcome`, `/autopin`, `/videodownload`, `/videoquality`. `welcome_message`/`default_location` are **owner-only to change** (mirroring `/welcome`/`/location`'s own gate) — stricter than this endpoint's own baseline (live group admin), so the handler separately requires `roles.owner` when either value actually differs from what's stored; every other field stays at the endpoint's normal tier. |
 | `GET /api/v1/chats/:id/members` | **Implemented (2026-07-28).** `chat_members` joined with `identities` for that chat, bots excluded, most-recently-active first. |
+| `GET /api/v1/chats/:id/keyword-alerts` | **Implemented (2026-09-01).** Open to any chat member (unlike `GET .../members` above, which needs live-admin access) — same view tier as `/keyword list`. `{items: [{id, chat_id, identity_id, keyword, created_at}]}`. |
+| `POST /api/v1/chats/:id/keyword-alerts` | **Implemented (2026-09-01).** `{keyword, identity_id?}` — mirrors `/keyword add <word>`, open to any chat member (same `resolveCreateIdentity` authorization as reminders/alerts/notes/expenses) — deliberately *not* admin-gated, since adding a keyword only affects what fires for the adder. Gated on the `keyword_alerts` feature flag. |
+| `DELETE /api/v1/keyword-alerts/:id` | **Implemented (2026-09-01).** Same authorization as `/keyword remove`: whoever added it, or the bot owner. |
 
 ## Feature parity — Reminders / Alerts / Watches / Notes
 
@@ -98,6 +101,27 @@ admin act beyond their own messages).
 | `GET /api/v1/notes?chat_id=` | **Implemented (2026-08-02).** `{items: [{id, chat_id, chat_title, text, created_at}]}` — mirrors `/note list`/`/notes`, but identity-scoped like Reminders/Alerts/Watches above rather than chat-scoped like the bot's own in-chat `/notes` (which shows every contributor's notes together in that one chat). New `notes.NoteForIdentity`/`notes.listForIdentity` in warden's store layer, added alongside this endpoint since warden's Phase 11 (`ROADMAP.md`) only shipped the chat-scoped `listForChat` the bot commands needed. |
 | `POST /api/v1/notes` | `{chat_id, text, identity_id?}` — mirrors `/note add <text>`. `text` capped at 1000 bytes, same as the command. Gated by the `notes` feature flag (already used bot-side by `/note`/`set_note`; also newly added to `feature_flags.known_modules` so it actually shows up as a toggle on `/admin/modules` — it existed as a gate before this but wasn't listed there). |
 | `DELETE /api/v1/notes/:id` | Same authorization as `/note delete`: whoever added it, or the bot owner — **not** "anyone in the chat" like Watches' removal is. |
+
+## Feature parity — Finance
+
+**Implemented on warden's side well before warden-ui's Phase 9** (its own
+`ROADMAP.md` Phase 17) — consumed here for the first time, not new API
+surface. Every amount is an integer cent count on the wire, never a float;
+`src/lib/money.ts`'s `parseAmountCents`/`formatCents` do the client-side
+conversion.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/expenses?chat_id=&identity_id=&category=&since=&limit=` | Identity-scoped like Notes ("my spending across every chat" by default) — unlike the bot's own `/expense list`, which is chat-scoped. |
+| `GET /api/v1/expenses/summary?chat_id=&since=` | Chat-scoped totals by category, cross-referenced against that chat's budgets. `since` is required from the caller (no server-side "this calendar month" guess, since the month boundary depends on the viewer's own UTC offset). |
+| `POST /api/v1/expenses` | Mirrors `/expense add <amount> <category> [description]` — open to anyone in the chat. |
+| `DELETE /api/v1/expenses/:id` | Same authorization as `/expense delete`: whoever recorded it, or the bot owner. |
+| `GET /api/v1/budgets?chat_id=` | Chat-scoped, readable by any member — a budget is chat-wide policy, not a personal record. |
+| `PUT /api/v1/budgets` | Upsert keyed by `(chat_id, category)` — **owner only**, same tier as a persona override. |
+| `DELETE /api/v1/budgets/:id` | Owner only, same as the `PUT` above. |
+| `GET /api/v1/subscriptions?chat_id=&identity_id=` | Identity-scoped like expenses; each row carries a server-computed `monthly_equivalent_cents` so the panel never re-derives the 30-day-month normalization itself. |
+| `POST /api/v1/subscriptions` | Mirrors `/subscription add <name> <amount> every <interval>` — takes `interval_days` as a plain integer rather than the bot's `1mo`/`2w` shorthand, since a picker is a better web fit than re-parsing that shorthand client-side. |
+| `DELETE /api/v1/subscriptions/:id` | Same authorization as `/subscription remove`: whoever added it, or the bot owner. |
 
 ## Feature parity — Convert
 
