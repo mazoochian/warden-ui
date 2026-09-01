@@ -857,6 +857,52 @@ worktree/branch and same test-verification caveat as Phases 11-12.*
   render correctly, `console --errors` clean. `npm run build` and
   `npm run lint` both clean.
 
+## Phase 16 — Announcements
+*Effort: M. Dependencies: Phase 4 (Groups per-chat page to add a section
+to). Status: done (2026-09-01), same worktree/branch as Phases 11-12/15.*
+
+- Backend: `GET`/`POST /api/v1/chats/:id/announcements` and `DELETE
+  /api/v1/announcements/:id`, mirroring `/announce`'s scheduling half
+  (`list`/`at`/`every`/`cancel`) — a bare `/announce <text>` (send now,
+  pinned) has no web equivalent, deliberately: that's a connector-backed
+  send closer to Bot View's territory than a settings-page create form.
+  `reminders.listPending` (already built for `/announce list`) fit this
+  chat-scoped shape directly, so no store changes were needed — the real
+  blocker this phase closes is that `reminders.listForIdentity`'s hard
+  `kind = 'reminder'` filter left announcements with zero web visibility,
+  not that no query existed at all. Extracted the "when" resolution logic
+  `handleCreateReminder` already had (duration vs. absolute) into a
+  shared `resolveWhenDueAt` helper so `POST /api/v1/reminders` and this
+  phase's create endpoint describe "when" identically rather than
+  duplicating the parsing.
+- Frontend: `useAnnouncements.ts`; a new Announcements section on the
+  Groups per-chat settings page, modeled directly on Reminders' own
+  create form (same when-picker: duration vs. absolute, optional repeat)
+  minus the chat picker, since this section is already scoped to one chat.
+- Verified with headless Chromium (mocked session/settings/announcements
+  endpoints), light and dark theme: confirmed the when-picker, message
+  field, and the scheduled-announcements table (with recurrence and
+  Cancel) all render real data correctly, `console --errors` clean.
+  `npm run build` and `npm run lint` both clean.
+- **Backend verification caveat, now observed twice**: same as Phases
+  11-12's note, but this phase's own `zig build test` run adds a second
+  independent data point — 12 failures + 1 crash this time (vs. 15 the
+  first time), in a *completely disjoint* set of files from run to run
+  (`digest.zig`/`bot_allowlist.zig`/`chats.zig`/`identities.zig`/
+  `reminders.zig`/`subscriptions.zig` this run; `bot_admins.zig`/
+  `chat_members.zig`/`messages.zig`/`expenses.zig`/`keyword_alerts.zig`/
+  `server.zig` the first) — zero overlap between the two failing sets,
+  and neither run's failures ever land in a file this stretch of phases
+  actually touched. The crash this time is a `findByUsername(...).?`
+  returning null immediately after a `TRUNCATE CASCADE` NOTICE for the
+  same table, right in the log — a cross-test data race under parallel
+  execution against one shared dev Postgres instance, not a null-handling
+  bug in `identities.zig` (a file none of Phases 11/12/15/16 touch).
+  `zig build` itself (pure compile) has been clean on every single run.
+  Treat this whole stretch of phases as build-verified but not yet
+  test-verified under a clean, uncontended `zig build test` — re-run it
+  once before merging `warden-ui-phase11-group-settings` to master.
+
 ---
 
 ## Cross-cutting things every phase should check
@@ -891,10 +937,6 @@ cheapest/highest-value first:
 - **Phase 14 — Storage Sense (admin, owner-only).** No API surface at
   all. Needs status/cleanup endpoints + an owner-only Admin page,
   mirroring Bot View's high-trust treatment.
-- **Phase 16 — Announcements.** Blocked server-side today —
-  `listForIdentity` hard-filters `kind='reminder'`, so even a new client
-  can't see them. Needs a real backend fix + endpoint + a Groups section.
-
 Not planned as their own phases: group identity (photo/title/description)
 — deliberately left out of Phase 11's scope, small enough to fold into
 Groups settings later if there's appetite; polls and on-demand `/summary`

@@ -123,6 +123,19 @@ conversion.
 | `POST /api/v1/subscriptions` | Mirrors `/subscription add <name> <amount> every <interval>` — takes `interval_days` as a plain integer rather than the bot's `1mo`/`2w` shorthand, since a picker is a better web fit than re-parsing that shorthand client-side. |
 | `DELETE /api/v1/subscriptions/:id` | Same authorization as `/subscription remove`: whoever added it, or the bot owner. |
 
+## Feature parity — Announcements
+
+Chat-scoped, not identity-scoped-across-chats like Reminders/Alerts/
+Watches/Notes/Expenses/Subscriptions above — a scheduled announcement is
+a chat-level admin object, same reasoning `reminders.listForIdentity`'s
+own hard `kind = 'reminder'` filter documents.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/chats/:id/announcements` | **Implemented (2026-09-01).** `{items: [{id, identity_id, message, due_at, recur_interval_seconds}]}` — mirrors `/announce list`, gated at this endpoint's own live-group-admin tier (stricter than the command's own "open to any chat member" list, same accepted simplification `digest_enabled` already has). |
+| `POST /api/v1/chats/:id/announcements` | **Implemented (2026-09-01).** `{message, when, recur_interval_seconds?}` — `when` is the exact same shape `POST /api/v1/reminders` uses. Mirrors `/announce at`/`/announce every` only — a bare `/announce <text>` (send now, pinned) has no web equivalent; that's a connector-backed send closer to Bot View than a settings-page create form. |
+| `DELETE /api/v1/announcements/:id` | **Implemented (2026-09-01).** Mirrors `/announce cancel` — gated at the *target chat's* live-group-admin tier (looked up from the row itself). |
+
 ## Feature parity — Memory
 
 Unlike every other identity-scoped resource on this page, **neither
