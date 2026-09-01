@@ -29,6 +29,7 @@ export type ChatSettings = {
   autopin_announcements: boolean;
   video_download_enabled: boolean;
   video_download_lossy: boolean;
+  slowmode_seconds: number;
 };
 
 export function useChatSettings(chatId: number) {

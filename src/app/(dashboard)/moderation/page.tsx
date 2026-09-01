@@ -5,6 +5,14 @@ import {
   Body1,
   Button,
   Caption1,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogBody,
+  DialogContent,
+  DialogSurface,
+  DialogTitle,
+  DialogTrigger,
   Dropdown,
   Field,
   Input,
@@ -37,11 +45,107 @@ import {
   useUnpin,
   type RedactInput,
 } from "@/hooks/useModeration";
+import { PERMISSION_BITS, useMemberPermissions, useSetMemberPermissions, useSetMemberTag } from "@/hooks/useMemberPermissions";
 import { ApiError } from "@/lib/api";
 import { t } from "@/lib/i18n";
 
 function errorMessage(err: unknown, fallback: string) {
   return err instanceof ApiError ? err.message : fallback;
+}
+
+function PermissionsContent({
+  chatId,
+  identityId,
+  initialBits,
+  onSaved,
+}: {
+  chatId: number;
+  identityId: number;
+  initialBits: number;
+  onSaved: () => void;
+}) {
+  const setPermissions = useSetMemberPermissions(chatId);
+  const [bits, setBitsState] = useState(initialBits);
+  const [durationMinutes, setDurationMinutes] = useState("");
+
+  const toggle = (bit: number) => setBitsState((b) => (b & bit ? b & ~bit : b | bit));
+  const save = () => {
+    const minutes = Number(durationMinutes);
+    const expiresAt = durationMinutes.trim() && Number.isFinite(minutes) && minutes > 0 ? Math.floor(Date.now() / 1000) + minutes * 60 : undefined;
+    setPermissions.mutate({ identityId, bits, expiresAt }, { onSuccess: onSaved });
+  };
+
+  return (
+    <>
+      <DialogContent>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "4px 16px" }}>
+          {PERMISSION_BITS.map((p) => (
+            <Checkbox key={p.key} checked={(bits & p.bit) !== 0} onChange={() => toggle(p.bit)} label={t(`moderation.permission.${p.key}`)} />
+          ))}
+        </div>
+        <Field label={t("moderation.permissionDuration")} hint={t("moderation.permissionDurationHint")}>
+          <Input type="number" min={0} value={durationMinutes} onChange={(_, d) => setDurationMinutes(d.value)} style={{ maxWidth: 160 }} />
+        </Field>
+        {setPermissions.isError && (
+          <MessageBar intent="error">
+            <MessageBarBody>{errorMessage(setPermissions.error, t("moderation.permissionSaveFailed"))}</MessageBarBody>
+          </MessageBar>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <DialogTrigger disableButtonEnhancement>
+          <Button appearance="secondary">{t("moderation.cancel")}</Button>
+        </DialogTrigger>
+        <Button appearance="primary" disabled={setPermissions.isPending} onClick={save}>
+          {t("moderation.save")}
+        </Button>
+      </DialogActions>
+    </>
+  );
+}
+
+function PermissionsDialog({ chatId, member }: { chatId: number; member: ChatMember }) {
+  const [open, setOpen] = useState(false);
+  const { data, isPending } = useMemberPermissions(chatId, open ? member.identity_id : null);
+
+  return (
+    <Dialog open={open} onOpenChange={(_, d) => setOpen(d.open)}>
+      <DialogTrigger disableButtonEnhancement>
+        <Button size="small">{t("moderation.permissions")}</Button>
+      </DialogTrigger>
+      <DialogSurface>
+        <DialogBody>
+          <DialogTitle>{t("moderation.permissionsTitle", { name: member.display_name })}</DialogTitle>
+          {isPending && <Spinner label={t("moderation.loadingPermissions")} />}
+          {data && (
+            <PermissionsContent key={member.identity_id} chatId={chatId} identityId={member.identity_id} initialBits={data.bits} onSaved={() => setOpen(false)} />
+          )}
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
+  );
+}
+
+function TagEditor({ chatId, member }: { chatId: number; member: ChatMember }) {
+  const setTag = useSetMemberTag(chatId);
+  const [title, setTitle] = useState("");
+
+  return (
+    <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+      <Input
+        size="small"
+        aria-label={t("moderation.tagPlaceholder")}
+        placeholder={t("moderation.tagPlaceholder")}
+        value={title}
+        onChange={(_, d) => setTitle(d.value)}
+        style={{ width: 120 }}
+      />
+      <Button size="small" disabled={setTag.isPending} onClick={() => setTag.mutate({ identityId: member.identity_id, title: title.trim() })}>
+        {t("moderation.setTag")}
+      </Button>
+      {setTag.isError && <Caption1 style={{ color: "var(--colorPaletteRedForeground1)" }}>{errorMessage(setTag.error, t("moderation.tagFailed"))}</Caption1>}
+    </div>
+  );
 }
 
 function MemberRow({ chatId, member, canPromote }: { chatId: number; member: ChatMember; canPromote: boolean }) {
@@ -89,6 +193,10 @@ function MemberRow({ chatId, member, canPromote }: { chatId: number; member: Cha
           <Button size="small" appearance="outline" disabled={anyPending} onClick={() => ban.mutate(target)}>
             {t("moderation.ban")}
           </Button>
+          <PermissionsDialog chatId={chatId} member={member} />
+        </div>
+        <div className={s.row} style={{ marginTop: "6px" }}>
+          <TagEditor chatId={chatId} member={member} />
         </div>
         {anyError && <Caption1 style={{ color: "var(--colorPaletteRedForeground1)" }}>{errorMessage(anyError, t("moderation.actionFailed"))}</Caption1>}
       </TableCell>

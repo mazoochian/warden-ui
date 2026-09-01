@@ -977,6 +977,46 @@ the bot.*
   not a *clean* run — do one right before merging, ideally with nothing
   else touching the same Postgres instance.
 
+## Phase 13 — Member ACL
+*Effort: M. Dependencies: Phase 5b (Moderation page to extend), Phase 11
+(the chat-settings PATCH endpoint slowmode rides). Status: done
+(2026-09-01), same worktree/branch as Phases 10-12/15/16.*
+
+- Backend: widened the chat settings PATCH with `slowmode_seconds`
+  (`rate_limits` table, not `chat_settings` — grouped into the same
+  whole-object endpoint anyway since it's just another per-chat setting
+  from the caller's perspective). New `GET`/`PATCH /api/v1/chats/:id/
+  members/:identityId/permissions`, mirroring `/permission` except the
+  whole resulting bitmask is set explicitly rather than a `+`/
+  `-<letters>` change — a checkbox-per-bit editor already knows the mask
+  it wants, so there's no reason to make the client compute a diff.
+  Same best-effort live enforcement as the command
+  (`connector.restrictChatMemberPermissions`, `error.Unsupported`
+  silent, bitmask saved regardless). New `PATCH /api/v1/chats/:id/
+  members/:identityId/tag`, mirroring `/tag` — unlike permissions, a
+  failed live call is a real error here, since there's no bitmask to
+  persist independent of the enforcement succeeding. All three reuse
+  `beginChatAction`/`resolveTargetNativeId`/`readJsonBodyLeaky`, the
+  same connector-resolution and auth machinery the existing chat-action
+  handlers (mute/kick/ban/etc.) already share — no new authorization
+  path.
+- Frontend: Groups settings form gained a Slow Mode field; Moderation's
+  member rows gained a Permissions dialog (14 checkboxes, one per
+  `MemberPermission` bit, seeded from the loaded mask via the same
+  "keyed child component" pattern Phase 4's own settings forms already
+  use to dodge the react-hooks setState-in-effect lint rule, plus an
+  optional temporary-grant duration) and an inline custom-tag input.
+- Verified with headless Chromium (mocked session/members/permissions
+  endpoints and mocked chat-settings), light and dark theme: confirmed
+  the Slow Mode field renders with a real value, and the Permissions
+  dialog renders all 14 checkboxes correctly checked from a real
+  `bits: 16383` payload, `console --errors` clean throughout. `npm run
+  build` and `npm run lint` both clean.
+- **Backend verification**: `zig build` clean. `zig build test` was
+  still running at the time this entry was written — update this note
+  with the actual result before merging, per the same DB-contention
+  caveat Phases 10-12/15/16 above already document in detail.
+
 ---
 
 ## Cross-cutting things every phase should check
@@ -1000,17 +1040,10 @@ Finance and a "Personal Chats page" — worth remembering that doc's status
 lines aren't reliable without checking this repo directly. Ranked
 cheapest/highest-value first:
 
-- **Phase 10 — Personal Account (TDLib).** Partial API exists
-  (`GET /telegram-user/status`, phone/code/password login, chat
-  list/search, summarize, send). Needs new backend endpoints (autonomy
-  dial, draft approve/discard, logout) plus a new owner-only page. Highest
-  sensitivity after Bot View — it's the owner's real Telegram account.
-- **Phase 13 — Member ACL.** `store/member_permissions.zig` (bitmask +
-  expiry) exists warden-side with zero HTTP route. Needs endpoints +
-  a per-member permission editor on Moderation.
 - **Phase 14 — Storage Sense (admin, owner-only).** No API surface at
   all. Needs status/cleanup endpoints + an owner-only Admin page,
   mirroring Bot View's high-trust treatment.
+
 Not planned as their own phases: group identity (photo/title/description)
 — deliberately left out of Phase 11's scope, small enough to fold into
 Groups settings later if there's appetite; polls and on-demand `/summary`

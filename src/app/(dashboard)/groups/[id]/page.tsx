@@ -69,8 +69,13 @@ function SettingsForm({ chatId, initial, isOwner }: { chatId: number; initial: C
   const [autopinAnnouncements, setAutopinAnnouncements] = useState(initial.autopin_announcements);
   const [videoDownloadEnabled, setVideoDownloadEnabled] = useState(initial.video_download_enabled);
   const [videoQuality, setVideoQuality] = useState<"lossy" | "lossless">(initial.video_download_lossy ? "lossy" : "lossless");
+  const [slowmodeSeconds, setSlowmodeSeconds] = useState(String(initial.slowmode_seconds));
+
+  const parsedSlowmode = Number(slowmodeSeconds);
+  const slowmodeValid = Number.isInteger(parsedSlowmode) && parsedSlowmode >= 0;
 
   const save = () => {
+    if (!slowmodeValid) return;
     setSettings.mutate({
       persona: persona.trim() === "" ? null : persona,
       magic_word: magicWord.trim() === "" ? null : magicWord,
@@ -82,6 +87,7 @@ function SettingsForm({ chatId, initial, isOwner }: { chatId: number; initial: C
       autopin_announcements: autopinAnnouncements,
       video_download_enabled: videoDownloadEnabled,
       video_download_lossy: videoQuality === "lossy",
+      slowmode_seconds: parsedSlowmode,
     });
   };
 
@@ -133,7 +139,11 @@ function SettingsForm({ chatId, initial, isOwner }: { chatId: number; initial: C
         </Field>
       )}
 
-      <Button appearance="primary" disabled={setSettings.isPending} onClick={save} style={{ alignSelf: "flex-start" }}>
+      <Field label={t("groupSettings.slowmode")} hint={t("groupSettings.slowmodeHint")} validationState={slowmodeValid ? "none" : "error"}>
+        <Input type="number" min={0} value={slowmodeSeconds} onChange={(_, data) => setSlowmodeSeconds(data.value)} style={{ maxWidth: 160 }} />
+      </Field>
+
+      <Button appearance="primary" disabled={!slowmodeValid || setSettings.isPending} onClick={save} style={{ alignSelf: "flex-start" }}>
         {t("groupSettings.save")}
       </Button>
     </Section>
