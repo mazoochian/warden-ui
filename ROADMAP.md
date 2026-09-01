@@ -1024,6 +1024,46 @@ the bot.*
   `getBits`/`setBits`, never modified here). Still not a clean run to
   merge on.
 
+## Phase 14 — Storage Sense (admin, owner-only)
+*Effort: S/M. Dependencies: none. Status: done (2026-09-01), same
+worktree/branch as Phases 10-13/15/16. Last phase from the original
+9-phase survey — closes it out.*
+
+- Backend: `GET /api/v1/admin/storage/status` — a structured counterpart
+  to `/storage status`'s text report (`storage_sense.buildStatusReport`),
+  since a web dashboard wants real fields (`used_pct`, watermark tier,
+  autopilot/sleep state) to build tiles from, not a pre-formatted
+  string. `PATCH .../autopilot` mirrors `/storage autopilot on|off`.
+  Three cleanup endpoints mirror `/storage cleanup`'s three modes: `.../
+  cleanup/tmp` (sweep), `.../cleanup/messages` (`chat_id?`/`keep_last?`/
+  `before?` — omitted `chat_id` means every chat, the ladder's own global
+  sweep, deliberately not "the current chat" the way the command
+  defaults, since there's no such concept over the web), `.../cleanup/
+  resample`. New `requireOwner` helper (strict owner, never `bot_admin`
+  — `requireAdmin` was the wrong tier here) for all five endpoints, same
+  ceiling `handleStorageCommand` already reserves for `/storage` bot-side.
+- Frontend: new owner-only `/admin/storage` page — status tiles (disk
+  used/available/total), a watermark badge, an autopilot toggle, and
+  three manual-cleanup actions (tmp sweep is a single button; prune and
+  resample open a small dialog/inline form for the optional chat/keep/
+  date parameters). New nav entry under Admin.
+- Verified with headless Chromium (mocked session/storage-status
+  endpoints), light and dark theme, both with and without the prune
+  dialog open: confirmed the stat tiles, watermark badge, autopilot
+  switch, and all three cleanup actions (including the prune dialog's
+  three fields) render correctly, `console --errors` clean throughout.
+  `npm run build` and `npm run lint` both clean.
+- **Backend verification**: `zig build` clean.
+
+This closes out every phase from the original post-survey plan
+(9-10, 11-16). Remaining backend verification work before merging
+`warden-ui-phase11-group-settings` to master: one clean, uncontended
+`zig build test` run — every run this session hit the same DB-contention
+pattern (disjoint, non-reproducible failure sets across unrelated
+pre-existing tests, never in a file any of these phases actually
+touched), documented in detail above, but a real clean run is still owed
+before merge.
+
 ---
 
 ## Cross-cutting things every phase should check
@@ -1038,18 +1078,15 @@ the bot.*
   live `connector.isGroupAdmin` check — never a new parallel
   authorization path, the same principle `/menu` was already built on.
 
-## Backlog — remaining parity gaps (surveyed 2026-09-01, updated after Phases 11-12)
+## Backlog — closed out (surveyed 2026-09-01, completed through Phase 14)
 
 A full re-survey of warden's `ROADMAP.md` (through its Phase 26) and
-`src/api/router.zig` turned up more gaps than just Finance (Phase 9
-above). Two of warden's own "warden-ui: done" claims turned out false —
-Finance and a "Personal Chats page" — worth remembering that doc's status
-lines aren't reliable without checking this repo directly. Ranked
-cheapest/highest-value first:
-
-- **Phase 14 — Storage Sense (admin, owner-only).** No API surface at
-  all. Needs status/cleanup endpoints + an owner-only Admin page,
-  mirroring Bot View's high-trust treatment.
+`src/api/router.zig`, done at the start of this stretch, found more gaps
+than just Finance (Phase 9). Two of warden's own "warden-ui: done" claims
+turned out false — Finance and a "Personal Chats page" — worth
+remembering that doc's status lines aren't reliable without checking
+this repo directly. Every ranked gap the survey found (Phases 9-16) is
+now done — see each phase's own section above.
 
 Not planned as their own phases: group identity (photo/title/description)
 — deliberately left out of Phase 11's scope, small enough to fold into

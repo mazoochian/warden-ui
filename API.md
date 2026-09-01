@@ -59,6 +59,21 @@ pages requires a valid session cookie; requests without one get `401`.
 | `PATCH /api/v1/admin/config/:key` | **Implemented (2026-07-28).** `{"value": "..."}` — `403` for any key not in `dynamic_config.known_keys` (covers secrets *and* identity/infra/restart-required, all rejected the same way: there's no path that accepts a secret at all, and accepting a write for an infra/restart-required key would silently go nowhere since nothing reads it back live). `400` if the value doesn't parse as that key's expected type (bool/i64/string). `WARDEN_LLM_PROVIDER` (the one `string`-kind key) additionally requires the named provider (`"anthropic"`/`"openai_compat"`) to actually have credentials configured — see `ARCHITECTURE.md` §6's "Provider selection" row. |
 | `GET /api/v1/admin/audit-log` | Paginated audit trail, filterable by `?action=`/`?account_id=`/`?since=`. |
 
+## Admin — Storage Sense (owner only, never bot_admin)
+
+First documented here 2026-09-01 (Phase 14). Gated by a strict
+`requireOwner` (not `requireAdmin`) — same tier `handleStorageCommand`
+reserves for `/storage` on the bot-chat side, since this can prune/
+resample real chat history and flip the ladder's autopilot switch.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/admin/storage/status` | `{used_pct, total_bytes, available_bytes, watermark, low_watermark_pct, high_watermark_pct, flood_watermark_pct, autopilot_enabled, sleep_active}` — a structured counterpart to `/storage status`'s text report, since a web dashboard wants real fields to build tiles from. `watermark` is one of `"normal"`/`"low"`/`"high"`/`"flood"`. |
+| `PATCH /api/v1/admin/storage/autopilot` | `{enabled}` — mirrors `/storage autopilot on\|off`. |
+| `POST /api/v1/admin/storage/cleanup/tmp` | Mirrors `/storage cleanup tmp`. `{files_deleted, bytes_freed}`. |
+| `POST /api/v1/admin/storage/cleanup/messages` | `{chat_id?, keep_last?, before?}` — mirrors `/storage cleanup messages`. `chat_id` omitted means every chat (the ladder's own global sweep), deliberately not "the current chat" the command defaults to, since there's no such concept over the web. `keep_last` needs a concrete `chat_id`; `before` (`YYYY-MM-DD`) or neither (falls back to the configured prune-age default) both work bot-wide or per-chat. |
+| `POST /api/v1/admin/storage/cleanup/resample` | `{chat_id?}` — mirrors `/storage cleanup resample`. `chat_id` omitted means every chat. |
+
 ## Admin — stats & directory
 
 | Method & path | Purpose |

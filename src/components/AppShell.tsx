@@ -59,6 +59,8 @@ import {
   Settings24Filled,
   Settings24Regular,
   SignOut20Regular,
+  Storage24Filled,
+  Storage24Regular,
 } from "@fluentui/react-icons";
 import Image from "next/image";
 import Link from "next/link";
@@ -216,6 +218,7 @@ const adminItems: NavLeaf[] = [
   { to: "/personal-account", label: t("nav.personalAccount"), icon: <PersonAccounts24Regular />, activeIcon: <PersonAccounts24Filled /> },
   { to: "/admin/audit-log", label: t("nav.adminAuditLog"), icon: <ClipboardTextLtr24Regular />, activeIcon: <ClipboardTextLtr24Filled /> },
   { to: "/admin/management-rooms", label: t("nav.adminManagementRooms"), icon: <LinkMultiple24Regular />, activeIcon: <LinkMultiple24Filled /> },
+  { to: "/admin/storage", label: t("nav.adminStorage"), icon: <Storage24Regular />, activeIcon: <Storage24Filled /> },
 ];
 
 const dashboardItem: NavLeaf = { to: "/", label: t("nav.dashboard"), icon: <BoardSplit24Regular />, activeIcon: <BoardSplit24Filled />, exact: true };
