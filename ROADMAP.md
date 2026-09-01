@@ -1012,10 +1012,17 @@ the bot.*
   dialog renders all 14 checkboxes correctly checked from a real
   `bits: 16383` payload, `console --errors` clean throughout. `npm run
   build` and `npm run lint` both clean.
-- **Backend verification**: `zig build` clean. `zig build test` was
-  still running at the time this entry was written — update this note
-  with the actual result before merging, per the same DB-contention
-  caveat Phases 10-12/15/16 above already document in detail.
+- **Backend verification**: `zig build` clean. `zig build test`: 15
+  failures + 1 crash, same DB-contention pattern as every prior phase
+  this session — but this run adds the clearest mechanistic confirmation
+  yet: `store/member_permissions.zig`'s own pre-existing test failed with
+  `expected 16381, found 16383` (`getBits` came back as the full
+  unrestricted mask right after `setBits` had just written a restricted
+  one) — a concurrent test writing the same literal `chat_id`/
+  `identity_id` seed values stomped this test's row between its write and
+  read, not a bug in `router.zig`'s new handlers (which only call
+  `getBits`/`setBits`, never modified here). Still not a clean run to
+  merge on.
 
 ---
 
