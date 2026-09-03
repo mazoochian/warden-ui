@@ -977,6 +977,49 @@ the bot.*
   not a *clean* run — do one right before merging, ideally with nothing
   else touching the same Postgres instance.
 
+### Follow-up (2026-09-03) — the drafts page was empty because drafts never existed
+
+Reported as "autonomous chat is dysfunctional: draft mode and auto mode
+both do nothing, the drafts page is empty, and no suggestion arrives".
+Nothing was wrong on this side: the page, its hooks and all six endpoints
+worked exactly as built. The backend never produced a draft to show. See
+warden's own ROADMAP entry for the root cause (`handleMessage`'s allowlist
+gate made the whole `reply_autonomy` path unreachable dead code); the
+fixes that reach this repo are:
+
+- `Draft` gained `incoming_text` and `replaced_draft`, so a pending draft
+  is judgeable at a glance — the reply alone, with no sight of the message
+  it answers, wasn't. `replaced_draft` is set only when writing the draft
+  into that chat's Telegram composer overwrote something the owner had
+  already typed, and is surfaced as a warning `MessageBar` rather than
+  being silently dropped.
+- The drafts section now says where a draft actually lives: it is typed
+  into the real Telegram composer, not just listed here, and Approve /
+  Discard clear that composer as well as this list.
+- `ChatAutonomy` gained `prompt`, edited from a new per-chat "ghostwriter
+  voice" field. Deliberately separate from the chat persona: that one
+  styles Warden answering as *itself*, this one styles it impersonating
+  the owner, and they used to share one column — so setting a persona
+  anywhere silently made that chat's ghostwritten replies sound like a
+  bot. `useSetChatAutonomy` omits `prompt` entirely when only the level
+  is changing, so flipping the level never clobbers a saved voice, and
+  sends `""` to clear one. The empty string rather than `null` is
+  deliberate, and was verified against std.json rather than assumed: Zig
+  parses a present JSON `null` into the same value as an absent field, so
+  `??[]const u8` does *not* give three states the way it looks like it
+  should, and encoding "clear" as `null` would have silently done nothing.
+- Prompt editing derives from `promptEdit ?? serverPrompt` rather than
+  syncing via `useEffect` — `react-hooks/set-state-in-effect` rejects the
+  effect form, and `ChatDetail` is already keyed by `native_chat_id` at
+  its render site, so switching chats resets the buffer by remounting
+  instead of needing an effect at all.
+- **Verification**: `npx tsc --noEmit`, `npm run lint` and `npm run build`
+  all clean. Backend `zig build` clean and `zig build test` at 752 tests
+  (745 before this pass + 7 new), with the *only* failures again landing
+  in untouched store files and differing run to run — the same DB
+  contention documented above, now reproduced on a dedicated Postgres
+  where the failing set still varied between runs (12, then 9, then 2).
+
 ## Phase 13 — Member ACL
 *Effort: M. Dependencies: Phase 5b (Moderation page to extend), Phase 11
 (the chat-settings PATCH endpoint slowmode rides). Status: done

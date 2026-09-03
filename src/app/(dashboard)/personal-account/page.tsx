@@ -183,6 +183,9 @@ function DraftsSection() {
 
   return (
     <Section title={t("personalAccount.drafts")}>
+      {/* Says where a draft actually lives now -- it is not only on this
+          page, it is pre-typed in the chat's Telegram composer. */}
+      <Body1 style={{ color: "var(--colorNeutralForeground3)" }}>{t("personalAccount.draftsHint")}</Body1>
       {isPending && <Spinner label={t("personalAccount.loadingDrafts")} />}
       {isError && <Body1>{t("personalAccount.loadDraftsFailed")}</Body1>}
       {data && data.items.length === 0 && <EmptyState text={t("personalAccount.noDrafts")} />}
@@ -190,7 +193,21 @@ function DraftsSection() {
         data.items.map((d) => (
           <div key={d.native_chat_id} className="draft-row" style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "10px 0", borderBottom: "1px solid var(--colorNeutralStroke2)" }}>
             <Text weight="semibold">{d.chat_title}</Text>
+            {/* The incoming message is what makes a draft judgeable at a
+                glance -- without it the reply is context-free. */}
+            <Text size={200} style={{ color: "var(--colorNeutralForeground3)" }}>
+              {t("personalAccount.draftIncoming")}
+            </Text>
+            <Body1 style={{ whiteSpace: "pre-wrap", color: "var(--colorNeutralForeground2)" }}>{d.incoming_text}</Body1>
+            <Text size={200} style={{ color: "var(--colorNeutralForeground3)" }}>
+              {t("personalAccount.draftReply")}
+            </Text>
             <Body1 style={{ whiteSpace: "pre-wrap" }}>{d.draft_text}</Body1>
+            {d.replaced_draft && (
+              <MessageBar intent="warning">
+                <MessageBarBody>{t("personalAccount.draftReplaced", { text: d.replaced_draft })}</MessageBarBody>
+              </MessageBar>
+            )}
             <div style={{ display: "flex", gap: "8px" }}>
               <Button
                 size="small"
@@ -222,6 +239,16 @@ function ChatDetail({ chat }: { chat: ChatMatch }) {
   const { data: autonomy } = useChatAutonomy(chat.native_chat_id);
   const setChatAutonomy = useSetChatAutonomy();
 
+  // Ghostwriter prompt editing: `null` means "untouched, show whatever the
+  // server has", so a fetch landing (or a save completing) is picked up
+  // without an effect that writes state. Switching chats resets this for
+  // free -- ChatDetail is keyed by native_chat_id at its render site, so it
+  // remounts rather than carrying one chat's unsaved edit to another.
+  // Explicit-save rather than on-change, since this is free text.
+  const [promptEdit, setPromptEdit] = useState<string | null>(null);
+  const serverPrompt = autonomy?.prompt ?? "";
+  const prompt = promptEdit ?? serverPrompt;
+
   const summarize = useSummarizeChat();
   const [summary, setSummary] = useState("");
 
@@ -242,6 +269,48 @@ function ChatDetail({ chat }: { chat: ChatMatch }) {
           options={chatAutonomyOptions}
           onChange={(v) => setChatAutonomy.mutate({ nativeChatId: chat.native_chat_id, override: v === "inherit" ? null : v })}
         />
+      </Field>
+
+      {/* Separate from the chat persona on purpose: that one styles Warden
+          answering as itself, this one styles Warden impersonating you.
+          Sharing a single setting made ghostwritten replies sound like a
+          bot the moment a persona was set anywhere. */}
+      <Field
+        label={t("personalAccount.ghostwriterPrompt")}
+        hint={t("personalAccount.ghostwriterPromptHint")}
+        style={{ gridColumn: "1 / -1" }}
+      >
+        <Textarea
+          value={prompt}
+          placeholder={t("personalAccount.ghostwriterPromptPlaceholder")}
+          onChange={(_, d) => setPromptEdit(d.value)}
+          rows={3}
+        />
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "6px" }}>
+          <Button
+            size="small"
+            onClick={() =>
+              setChatAutonomy.mutate(
+                {
+                  nativeChatId: chat.native_chat_id,
+                  override: autonomy?.override ?? null,
+                  // Empty means "clear it, fall back to the built-in prompt".
+                  prompt: prompt.trim() === "" ? null : prompt,
+                },
+                // Hand control back to the server value once it's saved.
+                { onSuccess: () => setPromptEdit(null) },
+              )
+            }
+            disabled={setChatAutonomy.isPending || prompt === serverPrompt}
+          >
+            {t("personalAccount.savePrompt")}
+          </Button>
+          {setChatAutonomy.isError && (
+            <MessageBar intent="error">
+              <MessageBarBody>{errorMessage(setChatAutonomy.error, t("personalAccount.promptFailed"))}</MessageBarBody>
+            </MessageBar>
+          )}
+        </div>
       </Field>
 
       <div>
