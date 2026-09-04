@@ -102,10 +102,15 @@ export function useSetGlobalAutonomy() {
   });
 }
 
+/** `prompt` is this chat's ghostwriter voice -- deliberately separate from
+ *  `/persona`, which styles Warden answering as *itself*. `null` means the
+ *  built-in "write in the owner's voice, no AI framing" prompt. */
+export type ChatAutonomy = { override: ReplyAutonomy | null; effective: ReplyAutonomy; prompt: string | null };
+
 export function useChatAutonomy(nativeChatId: string | null) {
   return useQuery({
     queryKey: ["telegram-user", "chat-autonomy", nativeChatId],
-    queryFn: () => apiFetch<{ override: ReplyAutonomy | null; effective: ReplyAutonomy }>(`/api/v1/telegram-user/chats/${nativeChatId}/autonomy`),
+    queryFn: () => apiFetch<ChatAutonomy>(`/api/v1/telegram-user/chats/${nativeChatId}/autonomy`),
     enabled: nativeChatId !== null,
   });
 }
@@ -113,13 +118,32 @@ export function useChatAutonomy(nativeChatId: string | null) {
 export function useSetChatAutonomy() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ nativeChatId, override }: { nativeChatId: string; override: ReplyAutonomy | null }) =>
-      apiFetch(`/api/v1/telegram-user/chats/${nativeChatId}/autonomy`, { method: "PATCH", body: JSON.stringify({ override }) }),
+    // `prompt` needs three states on the wire but JSON null can't carry one
+    // of them: the backend can't tell an explicit `null` from an absent
+    // field (std.json collapses both), so **the empty string is the "clear
+    // it" sentinel** and omitting the key means "leave it alone". Sending
+    // `null` would be read as "leave it alone" and silently do nothing, so
+    // the body is built conditionally and a clear is sent as "".
+    mutationFn: ({ nativeChatId, override, prompt }: { nativeChatId: string; override: ReplyAutonomy | null; prompt?: string | null }) =>
+      apiFetch(`/api/v1/telegram-user/chats/${nativeChatId}/autonomy`, {
+        method: "PATCH",
+        body: JSON.stringify(prompt === undefined ? { override } : { override, prompt: prompt ?? "" }),
+      }),
     onSuccess: (_data, vars) => queryClient.invalidateQueries({ queryKey: ["telegram-user", "chat-autonomy", vars.nativeChatId] }),
   });
 }
 
-export type Draft = { native_chat_id: string; chat_title: string; draft_text: string };
+export type Draft = {
+  native_chat_id: string;
+  chat_title: string;
+  /** What the contact actually said -- the message being replied to. */
+  incoming_text: string;
+  draft_text: string;
+  /** Set only when writing this draft into the chat's Telegram composer
+   *  overwrote something already typed there, so it can be shown rather than
+   *  silently lost. */
+  replaced_draft: string | null;
+};
 
 export function useDrafts() {
   return useQuery({
