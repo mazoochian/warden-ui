@@ -977,6 +977,33 @@ the bot.*
   not a *clean* run — do one right before merging, ideally with nothing
   else touching the same Postgres instance.
 
+## Curated Feed page (2026-09-04)
+*Effort: M. Dependencies: the backend curated-feed feature (`/api/v1/feed`).
+Status: done, same worktree as the 2026-09-03 bug sweep below.*
+
+A personal, policy-filtered news feed over the channels the owner's
+personal Telegram account can read. The page mirrors `/feed` exactly:
+settings (enabled, destination, natural-language policy, digest interval),
+the source list with add/remove, and a "run a pass now" button.
+
+- `useFeed` PATCHes partially — every field optional, so toggling the
+  enable switch never resends the policy. `""` clears the destination or
+  the policy, for the same reason the per-chat ghostwriter prompt uses that
+  sentinel: the backend can't distinguish an explicit JSON `null` from an
+  absent field, so `null` would silently mean "leave alone".
+- The page surfaces `runnable` from the API rather than re-deriving it.
+  "Enabled but missing a destination or policy" does nothing at all, which
+  would otherwise look identical to "on and quiet", so it gets its own
+  warning bar.
+- Editing uses the `edit ?? serverValue` pattern rather than syncing state
+  through `useEffect` (which `react-hooks/set-state-in-effect` rejects),
+  with the buffers cleared on save so the server value takes over again.
+- The add field clears only on success, so a rejected add (an ambiguous
+  channel name) leaves the text there to correct instead of making the user
+  retype it.
+- **Verification**: `npx tsc --noEmit`, `npm run lint` and `npm run build`
+  all clean; the new route renders as a static page.
+
 ### Follow-up (2026-09-03) — the drafts page was empty because drafts never existed
 
 Reported as "autonomous chat is dysfunctional: draft mode and auto mode
