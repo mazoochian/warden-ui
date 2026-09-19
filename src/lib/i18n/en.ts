@@ -488,11 +488,10 @@ export const en = {
   "adminIdentities.tableLabel": "Users",
   "adminIdentities.columnUser": "User",
   "adminIdentities.columnPlatform": "Platform",
-  "adminIdentities.columnCredits": "Credits",
   "adminIdentities.columnLastSeen": "Last seen",
   "adminIdentities.columnStatus": "Status",
   "adminIdentities.botAdmin": "Bot admin",
-  "adminIdentities.allowed": "Allowed",
+  "adminIdentities.blocked": "Blocked",
   "adminIdentities.never": "never",
 
   // --- Admin: User detail (src/app/(dashboard)/admin/identities/[id]/page.tsx) ---
@@ -500,8 +499,7 @@ export const en = {
   "adminIdentityDetail.loadFailed": "Failed to load user.",
   "adminIdentityDetail.idLabel": "id {{id}}",
   "adminIdentityDetail.botAdmin": "Bot admin",
-  "adminIdentityDetail.allowed": "Allowed",
-  "adminIdentityDetail.creditsLabel": "LLM credits",
+  "adminIdentityDetail.blocked": "Blocked",
   "adminIdentityDetail.activity": "Activity",
   "adminIdentityDetail.lastSeen": "Last seen: {{value}}",
   "adminIdentityDetail.never": "never",

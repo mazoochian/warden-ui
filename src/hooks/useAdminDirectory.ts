@@ -64,8 +64,7 @@ export type IdentitySummary = {
   display_name: string;
   username: string | null;
   is_bot_admin: boolean;
-  is_allowed: boolean;
-  credits: number;
+  is_blocked: boolean;
   last_seen: number | null;
 };
 

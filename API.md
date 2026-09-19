@@ -47,7 +47,6 @@ pages requires a valid session cookie; requests without one get `401`.
 | `DELETE /api/v1/me/sessions/:sessionId` | **Implemented (2026-07-28).** Revoke a specific session (including, deliberately, the ability to revoke the one making the request — that's just "log out"). `404` (not `403`) if `sessionId` isn't a live session owned by the caller, to avoid confirming it exists at all to someone who doesn't own it. |
 | `GET /api/v1/me/settings` | **Implemented (2026-07-28).** `{utc_offset_minutes, date_format, time_format}` — same data `/menu`'s Settings → Personal already exposes, now over HTTP. Resolves against the account's *first* linked identity (documented simplification: no account-linking flow exists yet, so this is unambiguous today). |
 | `PATCH /api/v1/me/settings` | **Implemented (2026-07-28).** Whole-object body, same "no sparse partial update" contract as the chat settings endpoint above. `null` on any field clears that override. |
-| `GET /api/v1/me/credits` | Current LLM credit balance (`identities.credits`). |
 
 ## Admin — modules & config (owner/bot admin only)
 
@@ -81,11 +80,11 @@ resample real chat history and flip the ladder's autopilot switch.
 | `GET /api/v1/admin/stats/overview` | **Implemented (2026-07-28).** `{total_messages, total_chats, total_identities, messages_last_24h, messages_last_7d, active_chats_last_7d}` — new `store/admin_directory.zig` (bot-wide queries; `store/stats.zig` stayed chat-scoped, untouched). Requires owner/bot_admin (`401`/`403`). |
 | `GET /api/v1/admin/chats` | **Implemented (2026-07-28).** Paginated (`?cursor=&limit=`) chat directory: `{items: [{id, platform, native_chat_id, title, member_count, message_count, digest_enabled}], next_cursor}`. |
 | `GET /api/v1/admin/chats/:id` | **Implemented (2026-07-28).** One chat's detail: settings (`chat_type`, `digest_enabled`, `magic_word`), member/message counts, last 10 messages (`recent_messages`, newest first). |
-| `GET /api/v1/admin/identities` | **Implemented (2026-07-28).** Paginated user directory (bots excluded): `{items: [{id, platform, display_name, username, is_bot_admin, is_allowed, credits, last_seen}], next_cursor}`. |
+| `GET /api/v1/admin/identities` | **Implemented (2026-07-28).** Paginated user directory (bots excluded): `{items: [{id, platform, display_name, username, is_bot_admin, is_blocked, last_seen}], next_cursor}`. (`is_allowed`/`credits` were dropped 2026-09-19 with the allowlist and credit system — the bot answers everyone by default now, and `is_blocked` marks who it doesn't.) |
 | `GET /api/v1/admin/identities/:id` | **Implemented (2026-07-28).** Adds `native_id` to the summary shape above. |
 | `POST /api/v1/admin/bot-admins` / `DELETE .../:identityId` | Grant/revoke bot admin — same authorization + effect as `/addadmin`/`/removeadmin`. |
-| `POST /api/v1/admin/allowlist/users` / `DELETE .../:identityId` | Same as `/adduser`/`/removeuser`. |
-| `POST /api/v1/admin/allowlist/chats` / `DELETE .../:chatId` | Same as `/allowchat`/`/disallowchat`. |
+| `POST /api/v1/admin/blocklist/users` / `DELETE .../:identityId` | Same as `/blockuser`/`/unblockuser`. |
+| `POST /api/v1/admin/blocklist/chats` / `DELETE .../:chatId` | Same as `/blockchat`/`/unblockchat`. |
 
 ## Groups (chat-scoped — group admin of that chat, bot admin, or owner)
 

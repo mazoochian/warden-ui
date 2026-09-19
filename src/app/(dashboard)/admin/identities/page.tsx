@@ -56,7 +56,6 @@ export default function AdminIdentitiesPage() {
               <TableRow>
                 <TableHeaderCell>{t("adminIdentities.columnUser")}</TableHeaderCell>
                 <TableHeaderCell>{t("adminIdentities.columnPlatform")}</TableHeaderCell>
-                <TableHeaderCell>{t("adminIdentities.columnCredits")}</TableHeaderCell>
                 <TableHeaderCell>{t("adminIdentities.columnLastSeen")}</TableHeaderCell>
                 <TableHeaderCell>{t("adminIdentities.columnStatus")}</TableHeaderCell>
               </TableRow>
@@ -77,7 +76,6 @@ export default function AdminIdentitiesPage() {
                   <TableCell>
                     <PlatformBadge platform={identity.platform} />
                   </TableCell>
-                  <TableCell>{identity.credits.toLocaleString()}</TableCell>
                   <TableCell>{formatLastSeen(identity.last_seen)}</TableCell>
                   <TableCell>
                     {identity.is_bot_admin && (
@@ -85,9 +83,9 @@ export default function AdminIdentitiesPage() {
                         {t("adminIdentities.botAdmin")}
                       </Badge>
                     )}
-                    {identity.is_allowed && (
-                      <Badge appearance="tint" shape="square">
-                        {t("adminIdentities.allowed")}
+                    {identity.is_blocked && (
+                      <Badge appearance="tint" color="danger" shape="square">
+                        {t("adminIdentities.blocked")}
                       </Badge>
                     )}
                   </TableCell>

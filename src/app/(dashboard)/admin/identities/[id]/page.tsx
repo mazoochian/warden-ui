@@ -1,7 +1,7 @@
 "use client";
 
 import { useIdentityDetail } from "@/hooks/useAdminDirectory";
-import { PageHeader, PlatformBadge, Section, StatTile, useCommonStyles } from "@/components/ui-kit";
+import { PageHeader, PlatformBadge, Section, useCommonStyles } from "@/components/ui-kit";
 import { t } from "@/lib/i18n";
 import { Badge, Body1, Spinner } from "@fluentui/react-components";
 import { useParams } from "next/navigation";
@@ -31,18 +31,14 @@ export default function AdminIdentityDetailPage() {
                 {t("adminIdentityDetail.botAdmin")}
               </Badge>
             )}
-            {identity.is_allowed && (
-              <Badge appearance="tint" shape="square">
-                {t("adminIdentityDetail.allowed")}
+            {identity.is_blocked && (
+              <Badge appearance="tint" color="danger" shape="square">
+                {t("adminIdentityDetail.blocked")}
               </Badge>
             )}
           </>
         }
       />
-
-      <div className={s.tiles}>
-        <StatTile label={t("adminIdentityDetail.creditsLabel")} value={identity.credits} />
-      </div>
 
       <Section title={t("adminIdentityDetail.activity")}>
         <Body1>{t("adminIdentityDetail.lastSeen", { value: formatLastSeen(identity.last_seen) })}</Body1>
