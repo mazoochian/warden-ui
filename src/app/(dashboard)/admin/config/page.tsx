@@ -1,6 +1,7 @@
 "use client";
 
 import { RecentChanges } from "@/components/RecentChanges";
+import { ReplyLengthSetting, replyLengthKey } from "@/components/ReplyLengthSetting";
 import { ConfigEntry, useAdminConfig, useSetConfigValue } from "@/hooks/useAdminConfig";
 import { PageHeader, Section, useCommonStyles } from "@/components/ui-kit";
 import { t } from "@/lib/i18n";
@@ -55,7 +56,9 @@ export default function AdminConfigPage() {
   const s = useCommonStyles();
   const { data, isPending, isError } = useAdminConfig();
 
-  const dynamicEntries = data?.items.filter((e) => e.category === "dynamic") ?? [];
+  // The reply length gets its own structured control instead of a raw row.
+  const replyLengthEntry = data?.items.find((e) => e.key === replyLengthKey);
+  const dynamicEntries = data?.items.filter((e) => e.category === "dynamic" && e.key !== replyLengthKey) ?? [];
   const secretEntries = data?.items.filter((e) => e.category === "secret") ?? [];
 
   return (
@@ -67,6 +70,8 @@ export default function AdminConfigPage() {
 
       {data && (
         <>
+          {replyLengthEntry && <ReplyLengthSetting key={replyLengthEntry.value} entry={replyLengthEntry} />}
+
           <Section title={t("adminConfig.liveSettings")}>
             <div>
               {dynamicEntries.map((e) => (

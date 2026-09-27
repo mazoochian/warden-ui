@@ -526,6 +526,26 @@ export const en = {
   "adminConfig.secrets": "Secrets",
   "adminConfig.secretsHint": "Masked, read-only -- change these in the deployment's .env and restart.",
 
+  // --- Reply length (src/components/ReplyLengthSetting.tsx, on the Config page) ---
+  "replyLength.title": "Reply length",
+  "replyLength.description":
+    "How long Warden's answers should be. Paragraphs and words are an instruction to the model -- it still goes longer when someone explicitly asks for detail, or when translating/rewriting a text. Tokens is a hard cap on the model's output.",
+  "replyLength.unit": "Limit by",
+  "replyLength.paragraphs": "Paragraphs",
+  "replyLength.words": "Words",
+  "replyLength.tokens": "Tokens",
+  "replyLength.off": "Off",
+  "replyLength.amount.paragraphs": "Maximum paragraphs",
+  "replyLength.amount.words": "Maximum words",
+  "replyLength.amount.tokens": "Maximum output tokens",
+  "replyLength.hint.paragraphs": "1 matches Warden's \"short and direct\" style; 2-3 for chattier answers.",
+  "replyLength.hint.words": "Roughly 60-100 words is one chat-sized paragraph.",
+  "replyLength.hint.tokens":
+    "A token is about 3/4 of an English word. Output past the cap is cut off. Reasoning models spend part of this on thinking -- if replies come back empty, raise it or limit by words/paragraphs instead.",
+  "replyLength.hint.off": "No length rule -- only the platform's message-size limit applies (replies tend to run long).",
+  "replyLength.amountError": "Enter a whole number between 1 and 100000.",
+  "replyLength.saveFailed": "Couldn't save the reply length.",
+
   // --- Admin: Audit Log (src/app/(dashboard)/admin/audit-log/page.tsx) ---
   "adminAuditLog.title": "Audit Log",
   "adminAuditLog.description": "Every mutating API call's trail -- who, what, when. Newest first.",
