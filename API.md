@@ -69,9 +69,9 @@ resample real chat history and flip the ladder's autopilot switch.
 |---|---|
 | `GET /api/v1/admin/storage/status` | `{used_pct, total_bytes, available_bytes, watermark, low_watermark_pct, high_watermark_pct, flood_watermark_pct, autopilot_enabled, sleep_active}` — a structured counterpart to `/storage status`'s text report, since a web dashboard wants real fields to build tiles from. `watermark` is one of `"normal"`/`"low"`/`"high"`/`"flood"`. |
 | `PATCH /api/v1/admin/storage/autopilot` | `{enabled}` — mirrors `/storage autopilot on\|off`. |
-| `POST /api/v1/admin/storage/cleanup/tmp` | Mirrors `/storage cleanup tmp`. `{files_deleted, bytes_freed}`. |
-| `POST /api/v1/admin/storage/cleanup/messages` | `{chat_id?, keep_last?, before?}` — mirrors `/storage cleanup messages`. `chat_id` omitted means every chat (the ladder's own global sweep), deliberately not "the current chat" the command defaults to, since there's no such concept over the web. `keep_last` needs a concrete `chat_id`; `before` (`YYYY-MM-DD`) or neither (falls back to the configured prune-age default) both work bot-wide or per-chat. |
-| `POST /api/v1/admin/storage/cleanup/resample` | `{chat_id?}` — mirrors `/storage cleanup resample`. `chat_id` omitted means every chat. |
+| `POST /api/v1/admin/storage/cleanup/tmp` | Mirrors `/storage cleanup tmp`. `{files_deleted, bytes_freed, files_kept, bytes_kept, max_age_seconds}` -- `*_kept` are files skipped for being newer than `max_age_seconds` (24h). |
+| `POST /api/v1/admin/storage/cleanup/messages` | `{chat_id?, keep_last?, before?}` — mirrors `/storage cleanup messages`. `chat_id` omitted means every chat (the ladder's own global sweep), deliberately not "the current chat" the command defaults to, since there's no such concept over the web. `keep_last` needs a concrete `chat_id`; `before` (`YYYY-MM-DD`) or neither (falls back to the configured prune-age default) both work bot-wide or per-chat. The age-based prune returns `{rows_deleted, chats_affected, chats_failed, cutoff_ts, oldest_ts}` (unix seconds; `oldest_ts` is the oldest message still stored in scope, `null` if none) so a zero result can say why; `keep_last` returns `{}`. |
+| `POST /api/v1/admin/storage/cleanup/resample` | `{chat_id?}` — mirrors `/storage cleanup resample`. `chat_id` omitted means every chat. `{messages_compacted, chats_affected, chats_failed}`; `502 summary_failed` when summaries failed and nothing was compacted (previously this came back as a silent "0 from 0 chats"). |
 
 ## Admin — stats & directory
 
