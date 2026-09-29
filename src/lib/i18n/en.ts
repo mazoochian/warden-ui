@@ -725,6 +725,7 @@ export const en = {
   "adminStorage.sweepTmpHint": "Deletes stale files from the bot's own scratch directory (over 24h old). Safe -- nothing here is real data.",
   "adminStorage.sweepTmpButton": "Sweep now",
   "adminStorage.sweepTmpResult": "Swept {{files}} files ({{bytes}} freed).",
+  "adminStorage.sweepTmpKept": "Kept {{files}} files ({{bytes}}) newer than {{hours}}h -- the bot also sweeps these automatically every 6h.",
   "adminStorage.pruneMessages": "Prune message history",
   "adminStorage.pruneMessagesHint": "Permanently deletes old messages. Leave chat empty to prune bot-wide.",
   "adminStorage.pruneMessagesButton": "Prune...",
@@ -739,8 +740,13 @@ export const en = {
   "adminStorage.dialogPrune": "Prune",
   "adminStorage.pruneResult": "Deleted {{rows}} messages across {{chats}} chats.",
   "adminStorage.pruneKeepResult": "Pruned that chat, keeping the most recent messages.",
+  "adminStorage.pruneNothingOlder":
+    "Nothing to delete: the cutoff is {{cutoff}} but the oldest stored message is from {{oldest}}. Set \"Delete before date\" to a later date to prune more recent history.",
+  "adminStorage.pruneNothingStored": "Nothing to delete: there are no stored messages.",
+  "adminStorage.chatsFailed": "{{chats}} chat(s) failed -- see the server log.",
   "adminStorage.resample": "Resample old messages",
   "adminStorage.resampleHint": "Compacts old messages into an LLM-written summary instead of deleting them outright. Leave chat empty to resample bot-wide.",
   "adminStorage.resampleButton": "Resample",
   "adminStorage.resampleResult": "Compacted {{messages}} messages across {{chats}} chats.",
+  "adminStorage.resampleNothing": "Nothing to compact: no chat has at least 20 messages that aren't already summarized.",
 } as const;

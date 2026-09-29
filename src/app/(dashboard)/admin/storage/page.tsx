@@ -30,6 +30,7 @@ import {
   useStorageStatus,
 } from "@/hooks/useStorageSense";
 import { ApiError } from "@/lib/api";
+import type { CleanupMessagesResult, SweepTmpResult } from "@/hooks/useStorageSense";
 import { t } from "@/lib/i18n";
 
 function errorMessage(err: unknown, fallback: string) {
@@ -45,6 +46,30 @@ function formatBytes(bytes: number) {
     unit += 1;
   }
   return `${value.toFixed(1)} ${units[unit]}`;
+}
+
+function formatDate(unixSeconds: number) {
+  return new Date(unixSeconds * 1000).toISOString().slice(0, 10);
+}
+
+/** Says why nothing was swept when that's the case, instead of a bare "0". */
+function sweepTmpResultText(d: SweepTmpResult) {
+  const swept = t("adminStorage.sweepTmpResult", { files: d.files_deleted, bytes: formatBytes(d.bytes_freed) });
+  if (!d.files_kept || d.max_age_seconds === undefined) return swept;
+  return `${swept} ${t("adminStorage.sweepTmpKept", { files: d.files_kept, bytes: formatBytes(d.bytes_kept ?? 0), hours: Math.round(d.max_age_seconds / 3600) })}`;
+}
+
+function pruneResultText(d: CleanupMessagesResult) {
+  if (d.rows_deleted === undefined) return t("adminStorage.pruneKeepResult");
+  let text = t("adminStorage.pruneResult", { rows: d.rows_deleted, chats: d.chats_affected ?? 0 });
+  if (d.rows_deleted === 0 && d.cutoff_ts !== undefined) {
+    text =
+      d.oldest_ts == null
+        ? t("adminStorage.pruneNothingStored")
+        : t("adminStorage.pruneNothingOlder", { cutoff: formatDate(d.cutoff_ts), oldest: formatDate(d.oldest_ts) });
+  }
+  if (d.chats_failed) text += ` ${t("adminStorage.chatsFailed", { chats: d.chats_failed })}`;
+  return text;
 }
 
 const watermarkColor: Record<string, "success" | "warning" | "danger" | "informative"> = {
@@ -115,7 +140,7 @@ function SweepTmpCard() {
       <Button
         onClick={() =>
           cleanupTmp.mutate(undefined, {
-            onSuccess: (d) => setResult(t("adminStorage.sweepTmpResult", { files: d.files_deleted, bytes: formatBytes(d.bytes_freed) })),
+            onSuccess: (d) => setResult(sweepTmpResultText(d)),
           })
         }
         disabled={cleanupTmp.isPending}
@@ -127,7 +152,7 @@ function SweepTmpCard() {
           <MessageBarBody>{errorMessage(cleanupTmp.error, t("adminStorage.actionFailed"))}</MessageBarBody>
         </MessageBar>
       )}
-      {result && <Text as="p">{result}</Text>}
+      {result && <Text as="p" block>{result}</Text>}
     </div>
   );
 }
@@ -150,11 +175,7 @@ function PruneMessagesCard() {
       },
       {
         onSuccess: (d) => {
-          setResult(
-            d.rows_deleted !== undefined
-              ? t("adminStorage.pruneResult", { rows: d.rows_deleted, chats: d.chats_affected ?? 0 })
-              : t("adminStorage.pruneKeepResult"),
-          );
+          setResult(pruneResultText(d));
           setOpen(false);
         },
       },
@@ -205,7 +226,7 @@ function PruneMessagesCard() {
           </DialogBody>
         </DialogSurface>
       </Dialog>
-      {result && <Text as="p">{result}</Text>}
+      {result && <Text as="p" block>{result}</Text>}
     </div>
   );
 }
@@ -230,7 +251,14 @@ function ResampleCard() {
         <Button
           onClick={() =>
             resample.mutate(chatId.trim() ? Number(chatId) : undefined, {
-              onSuccess: (d) => setResult(t("adminStorage.resampleResult", { messages: d.messages_compacted, chats: d.chats_affected })),
+              onSuccess: (d) => {
+                let text =
+                  d.messages_compacted === 0 && !d.chats_failed
+                    ? t("adminStorage.resampleNothing")
+                    : t("adminStorage.resampleResult", { messages: d.messages_compacted, chats: d.chats_affected });
+                if (d.chats_failed) text += ` ${t("adminStorage.chatsFailed", { chats: d.chats_failed })}`;
+                setResult(text);
+              },
             })
           }
           disabled={resample.isPending}
@@ -243,7 +271,7 @@ function ResampleCard() {
           <MessageBarBody>{errorMessage(resample.error, t("adminStorage.actionFailed"))}</MessageBarBody>
         </MessageBar>
       )}
-      {result && <Text as="p">{result}</Text>}
+      {result && <Text as="p" block>{result}</Text>}
     </div>
   );
 }
